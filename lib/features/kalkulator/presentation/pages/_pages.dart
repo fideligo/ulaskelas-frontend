@@ -33,3 +33,4 @@ part 'search_course_calculator.dart';
 part 'komponen_kalkulator_page.dart';
 part 'komponen_form_page.dart';
 part 'edit_komponen_page.dart';
+part 'add_semester_page.dart';
