@@ -31,60 +31,77 @@ class CardCalculator extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                // Container(
-                //   height: 50,
-                //   width: 50,
-                //   padding: const EdgeInsets.all(12),
-                //   decoration: BoxDecoration(
-                //     color: theme.colorScheme.primary.withOpacity(.15),
-                //     borderRadius: BorderRadius.circular(8),
-                //   ),
-                //   child: Center(
-                //     child: Text(
-                //       model.shortName.toString(),
-                //       style: FontTheme.poppins14w700black().copyWith(
-                //         color: theme.colorScheme.primary,
-                //       ),
-                //     ),
-                //   ),
-                // ),
-                // const WidthSpace(20),
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 50,
+                  height: 50,
+                ),
+                const WidthSpace(12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         model.courseName.toString(),
-                        style: FontTheme.poppins14w500black(),
-                      ),
-                      const HeightSpace(4),
-                      Text(
-                        '${model.courseSKS} SKS',
-                        style: FontTheme.poppins12w400black().copyWith(
-                          fontSize: 13,
-                          color: BaseColors.gray2,
+                        style: FontTheme.poppins14w500black().copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const HeightSpace(4),
-                      Text(
-                        _getFinalScoreAndGrade(model.totalScore!),
-                        style: FontTheme.poppins12w400black(),
+                      Row(
+                        children: [
+                          Text(
+                            '${model.courseSKS} SKS \u00B7 ',
+                            style: FontTheme.poppins12w400black().copyWith(
+                              fontSize: 13,
+                              color: BaseColors.gray2,
+                            ),
+                          ),
+                          if (model.totalPercentage == 100)
+                            Text(
+                              'nilai lengkap',
+                              style: FontTheme.poppins12w400black().copyWith(
+                                fontSize: 13,
+                                color: BaseColors.success,
+                              ),
+                            )
+                          else if ((model.totalPercentage ?? 0) > 0)
+                            Row(
+                              children: [
+                                const Icon(Icons.warning_amber_rounded, size: 14, color: BaseColors.gray2),
+                                const WidthSpace(2),
+                                Text(
+                                  'Bobot ${model.totalPercentage?.toStringAsFixed(0)}%',
+                                  style: FontTheme.poppins12w400black().copyWith(
+                                    fontSize: 13,
+                                    color: BaseColors.gray2,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Text(
+                              'belum ada nilai',
+                              style: FontTheme.poppins12w400black().copyWith(
+                                fontSize: 13,
+                                color: BaseColors.gray2,
+                              ),
+                            ),
+                        ],
                       ),
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      //   children: [
-                      //     Text(
-                      //       '${model.totalPercentage?.toStringAsFixed(2)}%',
-                      //       style: FontTheme.poppins12w400black().copyWith(
-                      //         color: BaseColors.gray2,
-                      //       ),
-                      //     ),
-                      //   ],
-                      // ),
                     ],
                   ),
                 ),
-                const WidthSpace(20),
+                const WidthSpace(12),
+                Text(
+                  (model.totalPercentage ?? 0) > 0 ? _getFinalGradeOnly(model.totalScore!) : '-',
+                  style: FontTheme.poppins14w700black().copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: (model.totalPercentage == 100) ? BaseColors.success : BaseColors.gray2,
+                  ),
+                ),
+                const WidthSpace(8),
                 IconButton(
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
@@ -129,25 +146,20 @@ class CardCalculator extends StatelessWidget {
     );
   }
 
+  String _getFinalGradeOnly(double score) {
+    if (score >= 85) return 'A';
+    if (score >= 80) return 'A-';
+    if (score >= 75) return 'B+';
+    if (score >= 70) return 'B';
+    if (score >= 65) return 'B-';
+    if (score >= 60) return 'C+';
+    if (score >= 55) return 'C';
+    if (score >= 40) return 'D';
+    return 'E';
+  }
+
   String _getFinalScoreAndGrade(double score) {
-    var grade = 'E';
-    if (score >= 85) {
-      grade = 'A';
-    } else if (score >= 80) {
-      grade = 'A-';
-    } else if (score >= 75) {
-      grade = 'B+';
-    } else if (score >= 70) {
-      grade = 'B';
-    } else if (score >= 65) {
-      grade = 'B-';
-    } else if (score >= 60) {
-      grade = 'C+';
-    } else if (score >= 55) {
-      grade = 'C';
-    } else if (score >= 40) {
-      grade = 'D';
-    }
+    final grade = _getFinalGradeOnly(score);
     return '$grade (${score.toStringAsFixed(2)})';
   }
 }

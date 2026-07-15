@@ -4,11 +4,11 @@ part of '_pages.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
-    required this.onSeeAllCourse,
+    required this.onOpenCalculator,
     super.key,
   });
 
-  final VoidCallback onSeeAllCourse;
+  final VoidCallback onOpenCalculator;
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -103,7 +103,7 @@ class _HomePageState extends BaseStateful<HomePage> {
               ),
               margin: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               child: InkWell(
-                onTap: () => widget.onSeeAllCourse.call(),
+                onTap: () => widget.onOpenCalculator.call(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -115,14 +115,14 @@ class _HomePageState extends BaseStateful<HomePage> {
                       Row(
                         children: [
                           Icon(
-                            Icons.list_alt_outlined,
+                            Icons.list_alt_rounded,
                             color: BaseColors.primaryColor,
                           ),
                           const SizedBox(
                             width: 10,
                           ),
                           Text(
-                            'Lihat Semua Mata Kuliah',
+                            'Buka Kalkulator',
                             style: FontTheme.poppins14w400purple(),
                           ),
                         ],

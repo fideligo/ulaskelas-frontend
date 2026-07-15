@@ -28,22 +28,10 @@ class CardCourse extends StatelessWidget {
         ),
         child: Row(
           children: <Widget>[
-            Container(
-              height: 50,
+            Image.asset(
+              'assets/images/logo.png',
               width: 50,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  model.shortName.toString(),
-                  style: FontTheme.poppins14w700black().copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ),
+              height: 50,
             ),
             const WidthSpace(12),
             Expanded(
@@ -61,7 +49,7 @@ class CardCourse extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        model.codeDesc.toString(),
+                        '${model.sks} SKS   Wajib   ${model.code}',
                         style: FontTheme.poppins12w400black(),
                       ),
                       Text(
