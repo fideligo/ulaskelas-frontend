@@ -87,6 +87,10 @@ final componentRM = RM.inject(
   ComponentState.new,
 );
 
+final calculatorComponentRM = RM.inject(
+  CalculatorComponentState.new,
+);
+
 final componentFormRM = RM.inject(
   ComponentFormState.new,
   autoDisposeWhenNotUsed: false,

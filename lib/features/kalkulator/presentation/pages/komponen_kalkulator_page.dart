@@ -27,16 +27,10 @@ class CalculatorComponentPage extends StatefulWidget {
 
 class _CalculatorComponentPageState
     extends BaseStateful<CalculatorComponentPage> {
-  late ScrollController scrollController;
-  Completer<void>? completer;
-
   @override
   void init() {
-    StateInitializer(
-      rIndicator: refreshIndicatorKey!,
-      state: false,
-      cacheKey: componentRM.state.cacheKey!,
-    ).initialize();
+    retrieveData();
+    calculatorComponentRM.state.loadCourseType(widget.courseId);
   }
 
   @override
@@ -47,293 +41,33 @@ class _CalculatorComponentPageState
   @override
   PreferredSizeWidget? buildAppBar(BuildContext context) {
     return BaseAppBar(
-      label: 'Tambah Nilai Mata Kuliah',
+      label: widget.courseName,
+      centerTitle: false,
+      elevation: 0,
+      style: FontTheme.poppins16w700black(),
       onBackPress: onBackPressed,
     );
   }
 
-  final List<String> _nilaiHarapanList = [
-    '85',
-    '80',
-    '75',
-    '70',
-    '65',
-    '60',
-    '55',
-  ];
-
   @override
-  Widget buildNarrowLayout(
-    BuildContext context,
-    SizingInformation sizeInfo,
-  ) {
-    return RefreshIndicator(
-      onRefresh: retrieveData,
-      key: refreshIndicatorKey,
-      child: OnBuilder<ComponentState>.all(
-        listenTo: componentRM,
-        onIdle: () => const SizedBox.shrink(),
-        onWaiting: () => const SizedBox.shrink(),
-        onError: (dynamic error, refresh) => Text(error.toString()),
-        onData: (data) {
-          final components = data.components;
-          return ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.courseName,
-                                style: FontTheme.poppins20w700black(),
-                              ),
-                              const HeightSpace(4),
-                              Text(
-                                '${widget.courseSKS} SKS',
-                                style: FontTheme.poppins16w500black().copyWith(
-                                  color: BaseColors.gray2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Nilai Akhir',
-                              style: FontTheme.poppins14w400black(),
-                            ),
-                            Text(
-                              _getFinalScoreAndGrade(widget.totalScore),
-                              style: FontTheme.poppins14w600black(),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Target',
-                              style: FontTheme.poppins14w400black(),
-                            ),
-                            Row(
-                              children: [
-                                SvgPicture.asset(
-                                  'assets/icons/star.svg',
-                                  // ignore: deprecated_member_use
-                                  height: 23,
-                                  width: 23,
-                                  color: componentRM.state.hasReachedMax &&
-                                          componentRM.state.canGiveRecom
-                                      ? null
-                                      : BaseColors.gray1.withOpacity(0.3),
-                                ),
-                                const SizedBox(
-                                  width: 6,
-                                ),
-                                TargetScoreDropdown(
-                                  nilaiHarapanList: _nilaiHarapanList,
-                                  voidWhenHasntReacedhMax: () {
-                                    if (!componentRM.state.hasReachedMax) {
-                                      ErrorMessenger(
-                                        'Total bobot harus mencapai 100%',
-                                      ).show(context);
-                                    } else if (!componentRM
-                                        .state.canGiveRecom) {
-                                      if (componentRM.state.allScoreFilled) {
-                                        print(
-                                          componentRM.state.allScoreFilled,
-                                        );
-                                        ErrorMessenger(
-                                          'Semua nilai komponen sudah '
-                                          'terisi',
-                                        ).show(context);
-                                      } else if (!componentRM.state.canPass) {
-                                        ErrorMessenger(
-                                          'Nilai tidak dapat mencapai '
-                                          'minimal target',
-                                        ).show(context);
-                                      }
-                                    }
-                                  },
-                                  voidWhenReachedMax:
-                                      componentRM.state.hasReachedMax &&
-                                              componentRM.state.canGiveRecom
-                                          ? (String? newValue) {
-                                              componentRM.state.setTarget(
-                                                int.parse(newValue!),
-                                              );
-                                              retrieveData();
-                                            }
-                                          : null,
-                                  canGiveRecom: componentRM.state.canGiveRecom,
-                                  hasReachedMax:
-                                      componentRM.state.hasReachedMax,
-                                  target: componentRM.state.target,
-                                  maxPossibleScore:
-                                      componentRM.state.maxPossibleScore,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        top: 20,
-                      ),
-                      child: CustomTableRow(
-                        components: [
-                          CustomTableRowComponent(
-                            flexRatio: 25,
-                            text: 'Komponen',
-                          ),
-                          CustomTableRowComponent(
-                            flexRatio: 10,
-                            text: 'Nilai',
-                          ),
-                          CustomTableRowComponent(
-                            flexRatio: 12,
-                            text: 'Bobot',
-                          ),
-                          CustomTableRowComponent(
-                            flexRatio: 0,
-                            text: 'Rekomendasi',
-                            isGradient: componentRM.state.hasReachedMax &&
-                                componentRM.state.canGiveRecom,
-                            componentStyle: componentRM.state.hasReachedMax &&
-                                    componentRM.state.canGiveRecom
-                                ? null
-                                : FontTheme.poppins12w600black().copyWith(
-                                    color: BaseColors.gray1.withOpacity(0.3),
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (components.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(25),
-                        child: Center(
-                          child: Text(
-                            'Belum Ada Komponen',
-                            style: FontTheme.poppins12w500black().copyWith(
-                              color: BaseColors.gray3,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.only(top: 20),
-                        itemCount: componentRM.state.components.length,
-                        itemBuilder: (context, index) {
-                          final component = components[index];
-                          return CardCompononent(
-                            id: component.id!,
-                            name: component.name!,
-                            score: component.score,
-                            weight: component.weight!,
-                            hope: componentRM.state.hasReachedMax &&
-                                    componentRM.state.canGiveRecom
-                                ? componentRM.state.recommendedScore
-                                : null,
-                            onTap: () {
-                              goToEditComponentPage(component);
-                            },
-                          );
-                        },
-                        separatorBuilder: (BuildContext context, int index) =>
-                            const SizedBox(height: 1),
-                      ),
-                    const HeightSpace(5),
-                    Column(
-                      children: [
-                        CustomTableRow(
-                          components: [
-                            CustomTableRowComponent(
-                              flexRatio: 50,
-                              text: '${componentRM.state.components.length} '
-                                  'Komponen',
-                            ),
-                            CustomTableRowComponent(
-                              flexRatio: 25,
-                              text: componentRM.state.totalScore
-                                  .toStringAsFixed(2),
-                            ),
-                            CustomTableRowComponent(
-                              flexRatio: 25,
-                              text:
-                                  '${formatDouble(componentRM.state.totalWeight)}%',
-                            ),
-                            CustomTableRowComponent(
-                              flexRatio: 30,
-                              text: componentRM.state.hasReachedMax &&
-                                      componentRM.state.canGiveRecom
-                                  ? componentRM.state.target!.toStringAsFixed(2)
-                                  : '',
-                              isGradient: true,
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                        if (!componentRM.state.hasReachedMax) ...[
-                          const HeightSpace(30),
-                          _buildWarningComponent(),
-                        ],
-                      ],
-                    ),
-                    const HeightSpace(35),
-                    SecondaryButton(
-                      width: double.infinity,
-                      text: 'Tambah Komponen',
-                      backgroundColor: BaseColors.purpleHearth,
-                      onPressed: goToComponentCreationPage,
-                    ),
-                    const HeightSpace(40),
-                    Center(
-                      child: InkWell(
-                        onTap: deleteCourse,
-                        child: Text(
-                          'Hapus Kalkulator Mata Kuliah',
-                          style: FontTheme.poppins14w500black().copyWith(
-                            color: BaseColors.error,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+  Widget buildNarrowLayout(BuildContext context, SizingInformation sizeInfo) {
+    return SafeArea(
+      child: RefreshIndicator(
+        key: refreshIndicatorKey,
+        onRefresh: retrieveData,
+        child: OnBuilder<CalculatorComponentState>.all(
+          listenTo: calculatorComponentRM,
+          onIdle: WaitingView.new,
+          onWaiting: WaitingView.new,
+          onError: (dynamic error, refresh) => _buildError(),
+          onData: _buildDetail,
+        ),
       ),
     );
   }
 
   @override
-  Widget buildWideLayout(
-    BuildContext context,
-    SizingInformation sizeInfo,
-  ) {
+  Widget buildWideLayout(BuildContext context, SizingInformation sizeInfo) {
     return buildNarrowLayout(context, sizeInfo);
   }
 
@@ -344,7 +78,202 @@ class _CalculatorComponentPageState
     return true;
   }
 
-  Future<void> deleteCourse() async {
+  Future<void> retrieveData() async {
+    await calculatorComponentRM.setState(
+      (s) => s.retrieveData(QueryComponent(calculatorId: widget.calculatorId)),
+    );
+  }
+
+  Widget _buildDetail(CalculatorComponentState data) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        _buildCoursePills(data),
+        const HeightSpace(16),
+        if (data.hasFullWeight)
+          CardTargetGrade(
+            target: data.target,
+            currentGrade: data.currentGrade,
+            currentScore: data.currentScore,
+            onTargetSelected: _changeTarget,
+          )
+        else
+          _buildWeightWarning(),
+        const HeightSpace(20),
+        const ComponentTableHeader(),
+        const HeightSpace(10),
+        if (data.breakdowns.isEmpty)
+          _buildEmptyComponents()
+        else
+          ...data.breakdowns.map(
+            (breakdown) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: CardComponentExpansion(
+                breakdown: breakdown,
+                isExpanded: data.isExpanded(breakdown),
+                recommendation: data.recommendationFor(
+                  score: breakdown.isFullyFilled ? breakdown.average : null,
+                ),
+                occurrenceRecommendation:
+                    data.hasFullWeight ? data.recommendedScore : null,
+                onTap: () =>
+                    calculatorComponentRM.state.toggleExpanded(breakdown),
+                onEdit: () => _editComponent(breakdown),
+              ),
+            ),
+          ),
+        const HeightSpace(20),
+        _buildAddComponentButton(),
+        const HeightSpace(28),
+        Center(
+          child: InkWell(
+            onTap: _deleteCourse,
+            child: Text(
+              'Hapus Kalkulator Mata Kuliah',
+              style: FontTheme.poppins14w500black().copyWith(
+                color: BaseColors.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// `Wajib Fakultas`, `4 SKS`, `Sem 4`. The type is dropped when the course
+  /// endpoint has none.
+  Widget _buildCoursePills(CalculatorComponentState data) {
+    final courseType = data.courseType;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (courseType != null && courseType.isNotEmpty) InfoPill(courseType),
+        InfoPill('${widget.courseSKS} SKS'),
+        InfoPill('Sem ${semesterShortLabel(widget.givenSemester)}'),
+      ],
+    );
+  }
+
+  Widget _buildWeightWarning() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: BaseColors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: BoxShadowDecorator().defaultShadow(context),
+      ),
+      child: Row(
+        children: [
+          Image.asset('assets/ruby/ruby_sad.png', height: 42),
+          const WidthSpace(12),
+          Expanded(
+            child: Text(
+              'Total bobot belum 100%. '
+              'Lengkapi dulu agar Ruby bisa memberi rekomendasi.',
+              style: FontTheme.poppins12w500black(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyComponents() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: Text(
+          'Belum Ada Komponen',
+          style: FontTheme.poppins12w500black().copyWith(
+            color: BaseColors.gray3,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddComponentButton() {
+    return GestureDetector(
+      onTap: _addComponent,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: BaseColors.purpleHearth),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Text(
+            'Tambah Komponen',
+            style: FontTheme.poppins14w600black().copyWith(
+              color: BaseColors.purpleHearth,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildError() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const HeightSpace(60),
+        Text(
+          'Gagal memuat komponen nilai.\nTarik ke bawah untuk mencoba lagi.',
+          style: FontTheme.poppins12w400black().copyWith(
+            color: BaseColors.gray2,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  void _changeTarget(GradeTarget target) {
+    calculatorComponentRM.setState(
+      (s) => s.changeTarget(target, widget.calculatorId),
+    );
+  }
+
+  /// Refresh on the way back so an edit shows up straight away.
+  Future<void> _addComponent() async {
+    await nav.goToComponentFormPage(
+      givenSemester: widget.givenSemester,
+      courseId: widget.courseId,
+      calculatorId: widget.calculatorId,
+      courseName: widget.courseName,
+      totalScore: widget.totalScore < 0 ? 0 : widget.totalScore,
+      totalPercentage: widget.totalPercentage,
+      courseSKS: widget.courseSKS,
+    );
+    await retrieveData();
+  }
+
+  Future<void> _editComponent(ComponentBreakdown breakdown) async {
+    await nav.goToEditComponentPage(
+      id: breakdown.id,
+      givenSemester: widget.givenSemester,
+      courseId: widget.courseId,
+      calculatorId: widget.calculatorId,
+      courseName: widget.courseName,
+      totalScore: widget.totalScore < 0 ? 0 : widget.totalScore,
+      totalPercentage: widget.totalPercentage,
+      componentName: breakdown.name,
+      componentScore: breakdown.average ?? 0,
+      componentWeight: breakdown.weight,
+      courseSKS: widget.courseSKS,
+    );
+    await retrieveData();
+  }
+
+  Future<void> _deleteCourse() async {
     await showDialog(
       context: context,
       builder: (context) => DeleteDialog(
@@ -357,107 +286,13 @@ class _CalculatorComponentPageState
             ..pop();
           await calculatorRM.setState(
             (s) => s.deleteCalculator(
-              query: QueryCalculator(
-                courseId: widget.courseId,
-              ),
+              query: QueryCalculator(courseId: widget.courseId),
               givenSemester: widget.givenSemester,
               courseName: widget.courseName,
               totalScore: widget.totalScore,
             ),
           );
         },
-      ),
-    );
-  }
-
-  void goToComponentCreationPage() {
-    nav.goToComponentFormPage(
-      givenSemester: widget.givenSemester,
-      courseId: widget.courseId,
-      calculatorId: widget.calculatorId,
-      courseName: widget.courseName,
-      totalScore: widget.totalScore < 0 ? 0 : widget.totalScore,
-      totalPercentage: widget.totalPercentage,
-      courseSKS: widget.courseSKS,
-    );
-  }
-
-  void goToEditComponentPage(ComponentModel component) {
-    print(widget.totalScore);
-    nav.goToEditComponentPage(
-      id: component.id!,
-      givenSemester: widget.givenSemester,
-      courseId: widget.courseId,
-      calculatorId: widget.calculatorId,
-      courseName: widget.courseName,
-      totalScore: widget.totalScore < 0 ? 0 : widget.totalScore,
-      totalPercentage: widget.totalPercentage,
-      componentName: component.name!,
-      componentScore: component.score! < 0 ? 0 : component.score!,
-      componentWeight: component.weight!,
-      courseSKS: widget.courseSKS,
-    );
-  }
-
-  String _getFinalScoreAndGrade(double score) {
-    var grade = 'E';
-    if (score >= 85) {
-      grade = 'A';
-    } else if (score >= 80) {
-      grade = 'A-';
-    } else if (score >= 75) {
-      grade = 'B+';
-    } else if (score >= 70) {
-      grade = 'B';
-    } else if (score >= 65) {
-      grade = 'B-';
-    } else if (score >= 60) {
-      grade = 'C+';
-    } else if (score >= 55) {
-      grade = 'C';
-    } else if (score >= 40) {
-      grade = 'D';
-    }
-
-    return '$grade (${score.toStringAsFixed(2)})';
-  }
-
-  Future<void> retrieveData() async {
-    await componentRM.setState(
-      (s) => s.retrieveData(QueryComponent(calculatorId: widget.calculatorId)),
-    );
-  }
-
-  Widget _buildWarningComponent() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: BaseColors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: BaseColors.neutral100.withOpacity(0.1),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Image.asset(
-            'assets/ruby/ruby_sad.png',
-            height: 42,
-          ),
-          const WidthSpace(12),
-          Expanded(
-            child: Text(
-              'Total bobot belum 100%. '
-              'Lengkapi dulu agar Ruby bisa memberi rekomendasi.',
-              style: FontTheme.poppins14w600black().copyWith(fontSize: 10),
-              textAlign: TextAlign.left,
-            ),
-          ),
-        ],
       ),
     );
   }
