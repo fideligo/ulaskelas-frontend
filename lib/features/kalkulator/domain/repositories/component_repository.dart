@@ -4,6 +4,9 @@ abstract class ComponentRepository {
   Future<Decide<Failure, Parsed<Map<String, dynamic>>>> getAllComponent(
     QueryComponent q,
   );
+  Future<Decide<Failure, Parsed<Map<String, dynamic>>>> getComponentSummary(
+    int calculatorId,
+  );
   Future<Decide<Failure, Parsed<Map<String, dynamic>>>> getDetailComponent(
     QueryComponent q,
   );

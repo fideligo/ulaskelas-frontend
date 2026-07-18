@@ -1,0 +1,57 @@
+// Display helpers for the grade calculator.
+//
+// The backend stores a semester either as a plain term number ('1'..'12') or
+// as a short semester ('sp_<year>'), so every place that sorts or labels a
+// semester has to decode the same two shapes.
+
+/// Sort key that places `sp_<year>` between the two regular terms of its
+/// academic year.
+///
+/// For a 2022 student `'sp_2025'` ranks 6.5, so it sits above `'6'` and below
+/// `'7'`. Returns 0 when the id cannot be decoded, which parks it at the
+/// bottom of a descending sort instead of letting it win as "active".
+double semesterRank(String givenSemester, int userGeneration) {
+  if (givenSemester.contains('sp')) {
+    final year = int.tryParse(givenSemester.split('_').last);
+    if (year == null || userGeneration <= 0) {
+      return 0;
+    }
+    return (year - userGeneration) * 2 + 0.5;
+  }
+  return double.tryParse(givenSemester) ?? 0;
+}
+
+/// `'6'` -> `'Semester 6'`, `'sp_2025'` -> `'Semester Pendek 2025'`.
+String semesterFullLabel(String givenSemester) {
+  if (givenSemester.contains('sp')) {
+    return 'Semester Pendek ${givenSemester.substring(3)}';
+  }
+  return 'Semester $givenSemester';
+}
+
+/// `'6'` -> `'6'`, `'sp_2025'` -> `'SP 2025'`. For tight spots like the
+/// `Sem 6 Aktif` badge.
+String semesterShortLabel(String givenSemester) {
+  if (givenSemester.contains('sp')) {
+    return 'SP ${givenSemester.substring(3)}';
+  }
+  return givenSemester;
+}
+
+/// A GPA as shown to the user, or `-` when there is none yet.
+///
+/// A semester with nothing filled in comes back as `-0.0`, which would
+/// otherwise render as `-0.00`. No GPA can be negative, so clamp at zero.
+String formatGpa(double? gpa) {
+  if (gpa == null) {
+    return '-';
+  }
+  return (gpa <= 0 ? 0.0 : gpa).toStringAsFixed(2);
+}
+
+/// [formatGpa] for the cumulative GPA, which the repository hands over
+/// already formatted as a string.
+String formatGpaString(String gpa) {
+  final parsed = double.tryParse(gpa);
+  return parsed == null ? gpa : formatGpa(parsed);
+}

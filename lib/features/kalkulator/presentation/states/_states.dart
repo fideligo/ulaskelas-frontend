@@ -7,8 +7,10 @@ import 'package:ulaskelas/features/kalkulator/data/datasources/_datasources.dart
 import 'package:ulaskelas/features/kalkulator/data/models/calculator_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/component_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/repositories/_repositories.dart';
+import 'package:ulaskelas/features/kalkulator/domain/entities/course_status.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/query_calculator.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/query_component.dart';
+import 'package:ulaskelas/features/kalkulator/domain/entities/semester_display.dart';
 import 'package:ulaskelas/features/kalkulator/domain/repositories/_repositories.dart';
 
 import '../../../../core/utils/in_app_tour/showcase_flow.dart';

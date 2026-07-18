@@ -9,7 +9,9 @@ import 'package:shimmer/shimmer.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 import 'package:ulaskelas/core/constants/_constants.dart';
 import 'package:ulaskelas/core/utils/util.dart';
+import 'package:ulaskelas/features/kalkulator/domain/entities/course_status.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/query_calculator.dart';
+import 'package:ulaskelas/features/kalkulator/domain/entities/semester_display.dart';
 import 'package:ulaskelas/services/_services.dart';
 
 import '../../../../core/bases/states/_states.dart';
@@ -23,10 +25,14 @@ import '../../data/models/semester_model.dart';
 
 part 'add_semester_dialog.dart';
 part 'autofill_dialog.dart';
+part 'card_active_course.dart';
+part 'card_active_semester.dart';
 part 'card_calculator.dart';
 part 'card_component.dart';
 part 'card_course_simplified.dart';
 part 'card_expansion.dart';
+part 'card_gpa_summary.dart';
+part 'card_past_semester.dart';
 part 'card_semester.dart';
 part 'custom_table_row.dart';
 part 'delete_dialog.dart';
