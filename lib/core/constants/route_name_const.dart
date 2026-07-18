@@ -30,6 +30,7 @@ class RouteName {
   static const String addSemesterPage = 'add-semester-page';
   static const String autoFillPage = 'auto-fill-page';
   static const String manualFillPage = 'manual-fill-page';
+  static const String confirmSemesterPage = 'confirm-semester-page';
   static const String editComponent = 'edit-component';
   static const String bookmarksPage = 'bookmarks';
   static const String tanyaTeman = 'tanya-teman';

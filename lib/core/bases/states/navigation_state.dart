@@ -239,6 +239,19 @@ class NavigationServiceState implements Navigation {
     );
   }
 
+  Future<void> goToConfirmSemesterPage({
+    required String givenSemester,
+    required List<SiakCourseModel> courses,
+  }) {
+    return nav.push<void>(
+      ConfirmSemesterPage(
+        givenSemester: givenSemester,
+        courses: courses,
+      ),
+      RouteName.confirmSemesterPage,
+    );
+  }
+
   Future<void> goToSearchCourseCalculatorPage(String givenSemester) {
     MixpanelService.track('calculator_add_course');
     return nav.push<void>(

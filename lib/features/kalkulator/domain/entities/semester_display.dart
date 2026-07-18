@@ -38,6 +38,30 @@ String semesterShortLabel(String givenSemester) {
   return givenSemester;
 }
 
+/// SIAK's name for a term, e.g. `Semester GENAP 2025/2026`.
+///
+/// A regular academic year covers two terms, so semesters 5 and 6 of a 2023
+/// intake both sit in 2025/2026. A short semester closes the year it runs in,
+/// so `sp_2025` reads as 2024/2025.
+String academicTermLabel(String givenSemester, int userGeneration) {
+  if (givenSemester.contains('sp')) {
+    final year = int.tryParse(givenSemester.split('_').last);
+    if (year == null) {
+      return 'Semester PENDEK';
+    }
+    return 'Semester PENDEK ${year - 1}/$year';
+  }
+
+  final term = int.tryParse(givenSemester);
+  if (term == null || userGeneration <= 0) {
+    return semesterFullLabel(givenSemester);
+  }
+
+  final startYear = userGeneration + (term - 1) ~/ 2;
+  final parity = term.isEven ? 'GENAP' : 'GANJIL';
+  return 'Semester $parity $startYear/${startYear + 1}';
+}
+
 /// Every semester a student can add, in study order: the two regular terms of
 /// an academic year followed by that year's short semester.
 ///

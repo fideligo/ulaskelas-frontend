@@ -6,6 +6,7 @@ import 'package:ulaskelas/core/_core.dart';
 import 'package:ulaskelas/features/kalkulator/data/datasources/_datasources.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/calculator_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/component_model.dart';
+import 'package:ulaskelas/features/kalkulator/data/models/siak_course_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/repositories/_repositories.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/course_status.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/query_calculator.dart';
@@ -21,6 +22,7 @@ import '../../data/models/semester_model.dart';
 import '../../domain/entities/query_semester.dart';
 
 part 'add_semester_state.dart';
+part 'auto_fill_state.dart';
 part 'calculator_state.dart';
 part 'component_state.dart';
 part 'component_form_state.dart';

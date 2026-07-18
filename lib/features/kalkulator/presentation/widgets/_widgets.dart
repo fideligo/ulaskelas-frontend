@@ -34,6 +34,7 @@ part 'card_expansion.dart';
 part 'card_fill_options.dart';
 part 'card_gpa_summary.dart';
 part 'card_past_semester.dart';
+part 'course_checklist_card.dart';
 part 'custom_table_row.dart';
 part 'delete_dialog.dart';
 part 'fill_method_placeholder.dart';
