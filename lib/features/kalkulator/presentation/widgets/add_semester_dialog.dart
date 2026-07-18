@@ -24,25 +24,7 @@ class _AddSemesterDialogState extends State<AddSemesterDialog> {
   @override
   void initState() {
     super.initState();
-    _listOfSemester = [
-      '1',
-      '2',
-      'sp_${widget.userGen + 1}',
-      '3',
-      '4',
-      'sp_${widget.userGen + 2}',
-      '5',
-      '6',
-      'sp_${widget.userGen + 3}',
-      '7',
-      '8',
-      'sp_${widget.userGen + 4}',
-      '9',
-      '10',
-      'sp_${widget.userGen + 5}',
-      '11',
-      '12',
-    ];
+    _listOfSemester = semesterCatalogue(widget.userGen);
 
     for (final givenSemester in _listOfSemester) {
       final isExist = widget.semesters.any(

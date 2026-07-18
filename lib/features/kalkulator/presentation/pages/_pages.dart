@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,10 +27,14 @@ import '../../data/models/component_model.dart';
 import '../../data/models/semester_model.dart';
 import '../../domain/entities/query_component.dart';
 import '../../domain/entities/query_semester.dart';
+import '../../domain/entities/semester_display.dart';
 import '../states/_states.dart';
 import '../widgets/_widgets.dart';
 
 part 'kalkulator_page.dart';
+part 'add_semester_page.dart';
+part 'auto_fill_page.dart';
+part 'manual_fill_page.dart';
 part 'semester_page.dart';
 part 'search_course_calculator.dart';
 part 'komponen_kalkulator_page.dart';

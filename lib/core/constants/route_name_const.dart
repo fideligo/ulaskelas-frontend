@@ -27,6 +27,9 @@ class RouteName {
   static const String componentFormPage = 'component-form';
   static const String calculatorPage = 'calculator';
   static const String semesterPage = 'semester-page';
+  static const String addSemesterPage = 'add-semester-page';
+  static const String autoFillPage = 'auto-fill-page';
+  static const String manualFillPage = 'manual-fill-page';
   static const String editComponent = 'edit-component';
   static const String bookmarksPage = 'bookmarks';
   static const String tanyaTeman = 'tanya-teman';

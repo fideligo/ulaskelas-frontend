@@ -10,9 +10,6 @@ class CalculatorPage extends StatefulWidget {
 }
 
 class _CalculatorPageState extends BaseStateful<CalculatorPage> {
-  final userGen =
-      int.tryParse(profileRM.state.profile.generation ?? '') ?? 0;
-
   @override
   void init() {
     StateInitializer(
@@ -106,22 +103,10 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
     );
   }
 
-  Future<void> showAddSemesterDialog(BuildContext context) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AddSemesterDialog(
-          userGen: userGen,
-          semesters: semesterRM.state.semesters,
-          onPressed: (selectedSemester) {
-            nav.pop();
-            semesterRM.setState(
-              (s) => s.postSemester(selectedSemester),
-            );
-          },
-        );
-      },
-    );
+  /// Refresh on the way back so a semester added there shows up here.
+  Future<void> openAddSemesterPage() async {
+    await nav.goToAddSemesterPage();
+    await retrieveData();
   }
 
   Widget _buildDashboard(BuildContext context, SemesterState data) {
@@ -289,7 +274,7 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
                   width: double.infinity,
                   text: 'Tambah Semester',
                   backgroundColor: BaseColors.purpleHearth,
-                  onPressed: () => showAddSemesterDialog(context),
+                  onPressed: openAddSemesterPage,
                 ),
               ],
             ),
@@ -340,7 +325,7 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
 
   Widget _addSemesterButton() {
     return GestureDetector(
-      onTap: () => showAddSemesterDialog(context),
+      onTap: openAddSemesterPage,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(

@@ -75,6 +75,10 @@ final calculatorRM = RM.inject(
   CalculatorState.new,
 );
 
+final addSemesterRM = RM.inject(
+  AddSemesterState.new,
+);
+
 final componentRM = RM.inject(
   ComponentState.new,
 );
@@ -126,6 +130,7 @@ class GlobalState {
       Inject(SearchTagState.new),
       Inject(BookmarkState.new),
       Inject(CalculatorState.new),
+      Inject(AddSemesterState.new),
       Inject(SemesterState.new),
       Inject(QuestionState.new),
       Inject(SearchQuestionState.new),
@@ -145,6 +150,7 @@ class GlobalState {
     Inject(SearchTagState.new),
     Inject(BookmarkState.new),
     Inject(CalculatorState.new),
+    Inject(AddSemesterState.new),
     Inject(SemesterState.new),
     Inject(QuestionState.new),
     Inject(SearchQuestionState.new),
