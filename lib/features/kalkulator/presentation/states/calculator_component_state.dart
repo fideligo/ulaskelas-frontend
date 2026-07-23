@@ -112,11 +112,15 @@ class CalculatorComponentState
 
   /// Ruby's number for a row: an occurrence already graded shows what it
   /// scored, an empty one shows what it still needs.
+  ///
+  /// Null across the board until the weights add up — a target computed
+  /// against a partial rubric would be wrong, so the column shows `-` rather
+  /// than a number the student might act on.
   double? recommendationFor({required double? score}) {
-    if (score != null) {
-      return score;
+    if (!hasFullWeight) {
+      return null;
     }
-    return hasFullWeight ? recommendedScore : null;
+    return score ?? recommendedScore;
   }
 
   /// The component list has no per-occurrence scores, so each component needs

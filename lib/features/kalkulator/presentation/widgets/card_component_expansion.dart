@@ -61,6 +61,7 @@ class CardComponentExpansion extends StatelessWidget {
     required this.recommendation,
     super.key,
     this.occurrenceRecommendation,
+    this.rubyEnabled = true,
     this.onTap,
     this.onEdit,
   });
@@ -73,6 +74,11 @@ class CardComponentExpansion extends StatelessWidget {
 
   /// Ruby's number for a single empty occurrence.
   final double? occurrenceRecommendation;
+
+  /// False while the rubric is under 100%, which blanks the `Rek. Ruby`
+  /// column on the expanded occurrence rows too — otherwise a graded
+  /// occurrence would keep showing a number while its component shows `-`.
+  final bool rubyEnabled;
 
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
@@ -208,7 +214,7 @@ class CardComponentExpansion extends StatelessWidget {
 
   Widget _buildOccurrenceRow(int index) {
     final score = breakdown.scores[index];
-    final shown = score ?? occurrenceRecommendation;
+    final shown = rubyEnabled ? score ?? occurrenceRecommendation : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),

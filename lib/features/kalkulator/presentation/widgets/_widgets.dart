@@ -53,6 +53,7 @@ part 'komponen_bottom_sheet.dart';
 part 'recommended_score_box.dart';
 part 'scores_field_input.dart';
 part 'search_list_view_simplified.dart';
+part 'setup_bobot_reminder_card.dart';
 part 'selected_course_pill.dart';
 part 'simpan_button.dart';
 part 'target_score_dropdown.dart';

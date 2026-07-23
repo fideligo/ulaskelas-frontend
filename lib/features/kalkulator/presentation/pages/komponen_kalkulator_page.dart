@@ -135,6 +135,8 @@ class _CalculatorComponentPageState
       children: [
         _buildCoursePills(data),
         const HeightSpace(16),
+        // Ruby's prediction only means anything once the rubric is whole, so
+        // below 100% the card is replaced by the setup reminder.
         if (data.hasFullWeight)
           CardTargetGrade(
             target: data.target,
@@ -143,7 +145,7 @@ class _CalculatorComponentPageState
             onTargetSelected: _changeTarget,
           )
         else
-          _buildWeightWarning(),
+          SetupBobotReminderCard(totalWeight: data.totalWeight),
         const HeightSpace(20),
         const ComponentTableHeader(),
         const HeightSpace(10),
@@ -161,6 +163,7 @@ class _CalculatorComponentPageState
                 ),
                 occurrenceRecommendation:
                     data.hasFullWeight ? data.recommendedScore : null,
+                rubyEnabled: data.hasFullWeight,
                 onTap: () =>
                     calculatorComponentRM.state.toggleExpanded(breakdown),
                 onEdit: () => _editComponent(breakdown),
@@ -199,31 +202,6 @@ class _CalculatorComponentPageState
         InfoPill('${widget.courseSKS} SKS'),
         InfoPill('Sem ${semesterShortLabel(widget.givenSemester)}'),
       ],
-    );
-  }
-
-  Widget _buildWeightWarning() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: BaseColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: BoxShadowDecorator().defaultShadow(context),
-      ),
-      child: Row(
-        children: [
-          Image.asset('assets/ruby/ruby_sad.png', height: 42),
-          const WidthSpace(12),
-          Expanded(
-            child: Text(
-              'Total bobot belum 100%. '
-              'Lengkapi dulu agar Ruby bisa memberi rekomendasi.',
-              style: FontTheme.poppins12w500black(),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
