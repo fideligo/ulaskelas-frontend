@@ -176,13 +176,41 @@ class ComponentFormState {
     }
   }
 
-  /// Wipes one occurrence back to "not graded yet" — the `x` on each row.
-  void clearScore(int index) {
+  /// True deletion of one occurrence — not clearing its value, removing it.
+  ///
+  /// The `x` on each row: unlike backspacing a score to blank (which leaves
+  /// the row as "not graded yet"), this drops the row outright, shifts every
+  /// later occurrence up by one index, and decrements frequency to match —
+  /// so deleting "Nilai 2" out of 3 turns "Nilai 3" into "Nilai 2" without
+  /// the user first clearing rows from the bottom. Can walk a component all
+  /// the way down to zero occurrences; [effectiveLength] and [averageScore]
+  /// already treat an empty controller list as "nothing to show" rather than
+  /// a bound to guard against, so frequency 0 renders, it just renders empty.
+  void deleteRow(int index) {
     if (index < 1 || index > _scoreControllers.length) {
       return;
     }
-    _scoreControllers[index - 1].clear();
-    _formData.score![index] = null;
+
+    _scoreControllers.removeAt(index - 1);
+
+    final shifted = <int, double?>{};
+    _formData.score?.forEach((key, value) {
+      if (key < index) {
+        shifted[key] = value;
+      } else if (key > index) {
+        shifted[key - 1] = value;
+      }
+    });
+    _formData.score = shifted;
+
+    _frequency.text = _scoreControllers.length.toString();
+    _previousFrequency = _frequency.text;
+
+    if (kDebugMode) {
+      print('Frequency: ${_frequency.text}');
+      print('Form Data: ${_formData.score}');
+    }
+
     componentFormRM.notify();
   }
 

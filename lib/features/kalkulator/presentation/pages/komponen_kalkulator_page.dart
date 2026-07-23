@@ -28,7 +28,7 @@ class CalculatorComponentPage extends StatefulWidget {
 class _CalculatorComponentPageState
     extends BaseStateful<CalculatorComponentPage> {
   /// Confirmation strip for the last add/edit/delete, cleared on a timer.
-  KomponenSheetResult? _banner;
+  String? _bannerMessage;
   Timer? _bannerTimer;
 
   @override
@@ -43,17 +43,33 @@ class _CalculatorComponentPageState
     super.dispose();
   }
 
-  void _showBanner(KomponenSheetResult result) {
+  void _showBannerMessage(String message) {
     _bannerTimer?.cancel();
-    setState(() => _banner = result);
+    setState(() => _bannerMessage = message);
     _bannerTimer = Timer(const Duration(seconds: 4), _dismissBanner);
   }
 
   void _dismissBanner() {
     _bannerTimer?.cancel();
     if (mounted) {
-      setState(() => _banner = null);
+      setState(() => _bannerMessage = null);
     }
+  }
+
+  /// The banner text for a sheet outcome.
+  ///
+  /// Deletion keeps the sheet's own component-specific copy. Add and edit
+  /// report the rubric's completeness instead — by the time this runs, the
+  /// page has already refetched, so `hasFullWeight` is the number that
+  /// actually decides whether Ruby's recommendation is live, which is what
+  /// the reminder card up top is telling the student about too.
+  String _messageFor(KomponenSheetResult result) {
+    if (result.action == KomponenSheetAction.deleted) {
+      return result.message;
+    }
+    return calculatorComponentRM.state.hasFullWeight
+        ? 'Bobot lengkap! Rekomendasi ruby aktif!'
+        : 'Bobot belum lengkap! Rekomendasi ruby belum aktif!';
   }
 
   @override
@@ -74,7 +90,7 @@ class _CalculatorComponentPageState
 
   @override
   Widget buildNarrowLayout(BuildContext context, SizingInformation sizeInfo) {
-    final banner = _banner;
+    final bannerMessage = _bannerMessage;
 
     return SafeArea(
       child: Column(
@@ -85,10 +101,10 @@ class _CalculatorComponentPageState
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
             alignment: Alignment.topCenter,
-            child: banner == null
+            child: bannerMessage == null
                 ? const SizedBox(width: double.infinity)
                 : ActionSuccessBanner(
-                    message: banner.message,
+                    message: bannerMessage,
                     onDismiss: _dismissBanner,
                   ),
           ),
@@ -279,7 +295,7 @@ class _CalculatorComponentPageState
 
     await retrieveData();
     if (mounted) {
-      _showBanner(result);
+      _showBannerMessage(_messageFor(result));
     }
   }
 
@@ -306,7 +322,7 @@ class _CalculatorComponentPageState
     }
 
     if (mounted) {
-      _showBanner(result);
+      _showBannerMessage(_messageFor(result));
     }
   }
 

@@ -384,11 +384,19 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
         final data = componentFormRM.state;
         final length = data.effectiveLength;
 
+        // A single row (or none, once the last has been X'd away) has
+        // nothing to collapse — the arrow only earns its place once there is
+        // more than one occurrence to hide.
+        final canCollapse = length > 1;
+        final isOpen = !canCollapse || _scoresExpanded;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              onTap: () => setState(() => _scoresExpanded = !_scoresExpanded),
+              onTap: canCollapse
+                  ? () => setState(() => _scoresExpanded = !_scoresExpanded)
+                  : null,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
@@ -400,12 +408,11 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
                         fontSize: 13,
                       ),
                     ),
-                    Icon(
-                      _scoresExpanded
-                          ? Icons.arrow_drop_up
-                          : Icons.arrow_drop_down,
-                      color: BaseColors.neutral100,
-                    ),
+                    if (canCollapse)
+                      Icon(
+                        isOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                        color: BaseColors.neutral100,
+                      ),
                   ],
                 ),
               ),
@@ -417,11 +424,13 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
                 color: BaseColors.gray2,
               ),
             ),
-            if (_scoresExpanded) ...[
+            if (isOpen) ...[
               const HeightSpace(4),
               for (var i = 0; i < length; i++) _buildScoreRow(data, i),
-              _buildAverageRow(data),
             ],
+            // Stays visible collapsed or not — the average is the one number
+            // worth seeing without expanding every occurrence.
+            _buildAverageRow(data),
             const HeightSpace(16),
           ],
         );
@@ -491,11 +500,13 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
                         hintStyle: FontTheme.poppins12w400black().copyWith(
                           color: BaseColors.gray3,
                         ),
-                        // The whole point of the nullable flow: getting back
-                        // to empty has to be one tap, not a long backspace.
+                        // Deletes the whole occurrence — not just the value —
+                        // and pulls frequency down with it, so removing
+                        // "Nilai 2" of 3 doesn't require clearing from the
+                        // bottom up first.
                         suffixIcon: GestureDetector(
                           onTap: () =>
-                              componentFormRM.state.clearScore(index + 1),
+                              componentFormRM.state.deleteRow(index + 1),
                           child: const Icon(
                             Icons.close,
                             size: 16,

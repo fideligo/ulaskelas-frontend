@@ -222,6 +222,161 @@ void main() {
     });
   });
 
+  group('row deletion via X', () {
+    testWidgets(
+        'deleting a middle row shifts later occurrences up and '
+        'decrements frequency', (tester) async {
+      await openAddSheet(tester);
+
+      componentFormRM.state
+        ..increaseFrequency() // 1 -> 2
+        ..increaseFrequency(); // 2 -> 3
+      await tester.pump();
+
+      componentFormRM.state.scoreControllers[0].text = '10';
+      componentFormRM.state.scoreControllers[1].text = '20';
+      componentFormRM.state.scoreControllers[2].text = '30';
+
+      // Delete row 2 (the "20").
+      componentFormRM.state.deleteRow(2);
+      await tester.pump();
+
+      expect(componentFormRM.state.frequency.text, '2');
+      expect(componentFormRM.state.scoreControllers.length, 2);
+      expect(componentFormRM.state.scoreControllers[0].text, '10');
+      // Row 3 ("30") shifted up into row 2's slot.
+      expect(componentFormRM.state.scoreControllers[1].text, '30');
+      expect(componentFormRM.state.effectiveLength, 2);
+      expect(componentFormRM.state.scoresPayload(), <double?>[10, 30]);
+    });
+
+    testWidgets('tapping the last row X removes it and steps frequency down',
+        (tester) async {
+      await openAddSheet(tester);
+
+      componentFormRM.state
+        ..increaseFrequency()
+        ..increaseFrequency();
+      await tester.pump();
+
+      expect(find.text('Nilai 3'), findsOneWidget);
+
+      // The last close icon in the tree is unambiguously row 3's — the
+      // header's sits structurally above the whole scores section, and this
+      // is the bottommost row within it. The sheet's own scroll view can
+      // leave it below the test viewport, so it needs scrolling into view
+      // before a tap actually lands on it rather than on empty space.
+      final rowClose = find.byIcon(Icons.close).last;
+      await tester.ensureVisible(rowClose);
+      await tester.pumpAndSettle();
+      await tester.tap(rowClose);
+      await tester.pump();
+
+      expect(componentFormRM.state.frequency.text, '2');
+      expect(find.text('Nilai 3'), findsNothing);
+    });
+
+    testWidgets(
+        'deleting the only row at frequency 1 drops it to 0 without '
+        'crashing', (tester) async {
+      await openAddSheet(tester);
+      expect(componentFormRM.state.frequency.text, '1');
+
+      componentFormRM.state.deleteRow(1);
+      await tester.pump();
+
+      expect(componentFormRM.state.frequency.text, '0');
+      expect(componentFormRM.state.scoreControllers, isEmpty);
+      expect(componentFormRM.state.effectiveLength, 0);
+      expect(componentFormRM.state.averageScore(), isNull);
+      expect(componentFormRM.state.scoresPayload(), isEmpty);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('accordion arrow gating', () {
+    testWidgets('is hidden while frequency is 1, row renders directly',
+        (tester) async {
+      await openAddSheet(tester);
+
+      expect(find.byIcon(Icons.arrow_drop_down), findsNothing);
+      expect(find.byIcon(Icons.arrow_drop_up), findsNothing);
+      expect(find.text('Nilai 1'), findsOneWidget);
+    });
+
+    testWidgets('appears once frequency exceeds 1 and can collapse the rows',
+        (tester) async {
+      await openAddSheet(tester);
+
+      componentFormRM.state.increaseFrequency();
+      await tester.pump();
+
+      expect(find.byIcon(Icons.arrow_drop_up), findsOneWidget);
+      expect(find.text('Nilai 1'), findsOneWidget);
+      expect(find.text('Nilai 2'), findsOneWidget);
+
+      await tester.tap(find.text('Nilai tiap komponen'));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
+      expect(find.text('Nilai 1'), findsNothing);
+      expect(find.text('Nilai 2'), findsNothing);
+      // Collapsed or not, the average stays on screen.
+      expect(find.text('Rata Rata'), findsOneWidget);
+    });
+
+    testWidgets('reappears and re-hides as rows are added and deleted back',
+        (tester) async {
+      await openAddSheet(tester);
+      expect(find.byIcon(Icons.arrow_drop_up), findsNothing);
+
+      componentFormRM.state.increaseFrequency();
+      await tester.pump();
+      expect(find.byIcon(Icons.arrow_drop_up), findsOneWidget);
+
+      componentFormRM.state.deleteRow(2);
+      await tester.pump();
+      expect(find.byIcon(Icons.arrow_drop_up), findsNothing);
+      expect(find.byIcon(Icons.arrow_drop_down), findsNothing);
+    });
+  });
+
+  group('component name dropdown', () {
+    testWidgets('is present with the standard recommendation seed',
+        (tester) async {
+      await openAddSheet(tester);
+
+      expect(find.byType(DropDownField), findsOneWidget);
+      expect(
+        componentFormRM.state.initRecommendation,
+        containsAll(<String>['UTS', 'UAS', 'Kuis', 'Tugas Kelompok']),
+      );
+    });
+  });
+
+  group('nullable saving', () {
+    testWidgets(
+        'frequency greater than filled scores still validates, '
+        'submitting the blanks as nulls', (tester) async {
+      await openAddSheet(tester);
+
+      componentFormRM.state
+        ..nameController.text = 'Kuis'
+        ..weightController.text = '20'
+        ..increaseFrequency() // 1 -> 2
+        ..increaseFrequency() // 2 -> 3
+        ..scoreControllers[0].text = '90';
+      await tester.pump();
+
+      // Two of the three rows are still blank; validation must not care.
+      expect(componentFormRM.state.formKey.currentState!.validate(), isTrue);
+      expect(
+        componentFormRM.state.scoresPayload(),
+        <double?>[90, null, null],
+      );
+    });
+  });
+
   group('banner copy', () {
     test('an edited component reports the update wording', () {
       const result = KomponenSheetResult(
