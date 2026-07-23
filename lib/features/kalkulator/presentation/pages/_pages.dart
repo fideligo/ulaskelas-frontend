@@ -15,6 +15,7 @@ import 'package:ulaskelas/core/utils/in_app_tour/pages/_pages.dart';
 import 'package:ulaskelas/core/utils/in_app_tour/showcase_flow.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/query_calculator.dart';
 import 'package:ulaskelas/features/matkul/search/data/models/_models.dart';
+import 'package:ulaskelas/features/tanyateman/presentation/widgets/_widgets.dart';
 import 'package:ulaskelas/services/_services.dart';
 import '../../../../core/utils/in_app_tour/widgets/_widgets.dart';
 import '../../../matkul/main/domain/entities/query_search_course.dart';

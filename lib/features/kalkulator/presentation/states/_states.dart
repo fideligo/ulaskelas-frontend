@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +19,7 @@ import 'package:ulaskelas/features/kalkulator/domain/entities/semester_display.d
 import 'package:ulaskelas/features/kalkulator/domain/repositories/_repositories.dart';
 import 'package:ulaskelas/features/matkul/main/data/datasources/_datasources.dart';
 import 'package:ulaskelas/features/matkul/main/data/repositories/_repositories.dart';
+import 'package:ulaskelas/features/matkul/main/domain/entities/query_search_course.dart';
 import 'package:ulaskelas/features/matkul/main/domain/repositories/_repositories.dart';
 
 import '../../../../core/utils/in_app_tour/showcase_flow.dart';
@@ -30,6 +33,7 @@ part 'add_semester_state.dart';
 part 'auto_fill_state.dart';
 part 'calculator_component_state.dart';
 part 'calculator_state.dart';
+part 'manual_fill_state.dart';
 part 'component_state.dart';
 part 'component_form_state.dart';
 part 'semester_state.dart';

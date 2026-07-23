@@ -19,7 +19,7 @@ class CardAutoFillOption extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
-            colors: [Color(0xFF44309F), Color(0xFF5C48D6)],
+            colors: [Color(0xFF162456), Color(0xFF5D0EC0)],
           ),
         ),
         child: Column(

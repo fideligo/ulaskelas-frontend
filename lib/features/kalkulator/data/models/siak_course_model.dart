@@ -1,3 +1,5 @@
+import 'package:ulaskelas/features/matkul/search/data/models/_models.dart';
+
 /// A course read off the student's IRS in SIAK for one semester.
 ///
 /// Shaped for the scrape endpoint that does not exist yet — this model is
@@ -10,6 +12,18 @@ class SiakCourseModel {
     this.sks,
     this.type,
   });
+
+  /// Adapts a catalogue course into the shape the review step reads.
+  ///
+  /// The manual picker works with `CourseModel`, so the two entry points into
+  /// the review screen have to agree on one shape. Worth replacing with a
+  /// shared course type once the review step is real.
+  SiakCourseModel.fromCourse(CourseModel course) {
+    name = course.name;
+    code = course.code;
+    sks = course.sks;
+    type = course.codeDesc;
+  }
 
   SiakCourseModel.fromJson(Map<String, dynamic> json) {
     name = json['course_name'];

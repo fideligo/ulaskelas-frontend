@@ -83,6 +83,11 @@ final autoFillRM = RM.inject(
   AutoFillState.new,
 );
 
+final manualFillRM = RM.inject(
+  ManualFillState.new,
+  autoDisposeWhenNotUsed: false,
+);
+
 final componentRM = RM.inject(
   ComponentState.new,
 );
@@ -140,6 +145,7 @@ class GlobalState {
       Inject(CalculatorState.new),
       Inject(AddSemesterState.new),
       Inject(AutoFillState.new),
+      Inject(ManualFillState.new),
       Inject(SemesterState.new),
       Inject(QuestionState.new),
       Inject(SearchQuestionState.new),
@@ -161,6 +167,7 @@ class GlobalState {
     Inject(CalculatorState.new),
     Inject(AddSemesterState.new),
     Inject(AutoFillState.new),
+    Inject(ManualFillState.new),
     Inject(SemesterState.new),
     Inject(QuestionState.new),
     Inject(SearchQuestionState.new),
