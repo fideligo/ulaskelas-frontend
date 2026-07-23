@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ristek_material_component/ristek_material_component.dart';
 import 'package:ulaskelas/core/_core.dart';

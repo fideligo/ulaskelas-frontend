@@ -1,11 +1,11 @@
 part of '_states.dart';
 
 class ComponentFormState {
-  ComponentFormState() {
-    final remoteDataSource = ComponentRemoteDataSourceImpl();
-    _repo = ComponentRepositoryImpl(
-      remoteDataSource,
-    );
+  /// [repo] is injectable only so tests can drive the edit-mode fetch with
+  /// seeded nullable/empty scores; production passes nothing and gets the
+  /// real implementation.
+  ComponentFormState({ComponentRepository? repo}) {
+    _repo = repo ?? ComponentRepositoryImpl(ComponentRemoteDataSourceImpl());
     _frequency.text = '1';
     getCachedRecommendation();
   }
@@ -76,12 +76,10 @@ class ComponentFormState {
     final resp = await _repo.createComponent(result);
     isLoading = false;
     componentFormRM.notify();
-    resp.fold((failure) {
-      throw failure;
-    }, (result) {
-      final successSubmittedComponent = result.data;
-      print(successSubmittedComponent);
-    });
+    resp.fold(
+      (failure) => throw failure,
+      (_) {},
+    );
 
     if (_formData.name != null && _formData.name!.isNotEmpty) {
       await addNewCachedRecommendation(_formData.name!);
@@ -104,12 +102,10 @@ class ComponentFormState {
     final resp = await _repo.editComponent(result);
     isLoading = false;
     componentFormRM.notify();
-    resp.fold((failure) {
-      throw failure;
-    }, (result) {
-      final successEditedComponent = result.data;
-      print(successEditedComponent);
-    });
+    resp.fold(
+      (failure) => throw failure,
+      (_) {},
+    );
 
     if (_formData.name != null && _formData.name!.isNotEmpty) {
       await addNewCachedRecommendation(_formData.name!);
@@ -170,10 +166,6 @@ class ComponentFormState {
       return;
     }
     _formData.score![index] = parseScore(scoreControllers[index - 1].text);
-
-    if (kDebugMode) {
-      print('Form Data: ${_formData.score}');
-    }
   }
 
   /// True deletion of one occurrence — not clearing its value, removing it.
@@ -205,11 +197,6 @@ class ComponentFormState {
 
     _frequency.text = _scoreControllers.length.toString();
     _previousFrequency = _frequency.text;
-
-    if (kDebugMode) {
-      print('Frequency: ${_frequency.text}');
-      print('Form Data: ${_formData.score}');
-    }
 
     componentFormRM.notify();
   }
@@ -253,11 +240,6 @@ class ComponentFormState {
     _frequency.text = (currentLength - 1).toString();
     _scoreControllers.removeLast();
 
-    if (kDebugMode) {
-      print('Frequency: ${_frequency.text}');
-      print('Form Data: ${_formData.score}');
-    }
-
     _previousFrequency = _frequency.text;
 
     componentFormRM.notify();
@@ -270,11 +252,6 @@ class ComponentFormState {
     _scoreControllers.add(TextEditingController());
 
     _formData.score![currentLength + 1] = null;
-
-    if (kDebugMode) {
-      print('Frequency: ${_frequency.text}');
-      print('Form Data: ${_formData.score}');
-    }
 
     _previousFrequency = _frequency.text;
 
@@ -304,11 +281,6 @@ class ComponentFormState {
       for (var i = 1; i < value + 1; i++) {
         _formData.score!.putIfAbsent(i, () => null);
       }
-    }
-
-    if (kDebugMode) {
-      print('Frequency: ${_frequency.text}');
-      print('Form Data: ${_formData.score}');
     }
 
     _previousFrequency = _frequency.text;

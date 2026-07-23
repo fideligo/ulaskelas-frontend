@@ -55,7 +55,6 @@ class ComponentBreakdown {
   double get weightPerOccurrence =>
       totalCount == 0 ? weight : weight / totalCount;
 
-  /// `Kuis 1`, `Kuis 2`, … or just the name when it is graded once.
-  String occurrenceName(int index) =>
-      totalCount > 1 ? '$name ${index + 1}' : name;
+  /// `Kuis 1`, `Kuis 2`, …
+  String occurrenceName(int index) => '$name ${index + 1}';
 }

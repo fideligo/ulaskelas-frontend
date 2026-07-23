@@ -56,22 +56,6 @@ class _CalculatorComponentPageState
     }
   }
 
-  /// The banner text for a sheet outcome.
-  ///
-  /// Deletion keeps the sheet's own component-specific copy. Add and edit
-  /// report the rubric's completeness instead — by the time this runs, the
-  /// page has already refetched, so `hasFullWeight` is the number that
-  /// actually decides whether Ruby's recommendation is live, which is what
-  /// the reminder card up top is telling the student about too.
-  String _messageFor(KomponenSheetResult result) {
-    if (result.action == KomponenSheetAction.deleted) {
-      return result.message;
-    }
-    return calculatorComponentRM.state.hasFullWeight
-        ? 'Bobot lengkap! Rekomendasi ruby aktif!'
-        : 'Bobot belum lengkap! Rekomendasi ruby belum aktif!';
-  }
-
   @override
   ScaffoldAttribute buildAttribute() {
     return ScaffoldAttribute();
@@ -295,7 +279,7 @@ class _CalculatorComponentPageState
 
     await retrieveData();
     if (mounted) {
-      _showBannerMessage(_messageFor(result));
+      _showBannerMessage(result.message);
     }
   }
 
@@ -322,7 +306,7 @@ class _CalculatorComponentPageState
     }
 
     if (mounted) {
-      _showBannerMessage(_messageFor(result));
+      _showBannerMessage(result.message);
     }
   }
 

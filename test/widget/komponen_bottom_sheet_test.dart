@@ -9,8 +9,9 @@ import 'package:ulaskelas/services/_services.dart';
 import 'widget_test.dart';
 
 /// Add mode is the only branch that opens without a network call, so it is the
-/// one that can be pumped honestly. Edit mode hits `retrieveDetailedComponent`
-/// on init and is left to manual testing.
+/// one pumped honestly here. Edit mode hits `retrieveDetailedComponent` on
+/// init, so its seeded-fetch coverage (collapsed default, row deletion) lives
+/// in `komponen_bottom_sheet_edit_test.dart`, which mocks the repository.
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});

@@ -14,6 +14,24 @@ class _ComponentColumns {
   static const chevronWidth = 18.0;
 }
 
+/// Column widths for an expanded occurrence pill — three fields, not four:
+/// there is no per-occurrence weight to show once the component's own row
+/// already states it.
+class _OccurrenceColumns {
+  static const name = 40;
+  static const score = 30;
+  static const recommendation = 30;
+}
+
+/// Design-signed one-offs for the occurrence pill, pinned locally the same
+/// way `komponen_bottom_sheet.dart` pins its own palette — the nearest
+/// `BaseColors` tokens (`neutral20`, `gray3`) are close but not these exact
+/// values, and drifting onto them silently would be wrong.
+abstract class _OccurrenceColors {
+  static const pillBackground = Color(0xFFF4F4F5);
+  static const placeholder = Color(0xFF9CA3AF);
+}
+
 /// `Komponen | Nilai | Bobot | Rek. Ruby` above the component list.
 class ComponentTableHeader extends StatelessWidget {
   const ComponentTableHeader({super.key});
@@ -184,80 +202,88 @@ class CardComponentExpansion extends StatelessWidget {
   }
 
   Widget _buildOccurrences() {
-    return Container(
-      color: BaseColors.neutral20,
-      padding: const EdgeInsets.fromLTRB(14, 4, 14, 4),
+    final rows = <Widget>[];
+    for (var index = 0; index < breakdown.totalCount; index++) {
+      if (rows.isNotEmpty) {
+        rows.add(const HeightSpace(8));
+      }
+      rows.add(_buildOccurrenceRow(index));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (var index = 0; index < breakdown.totalCount; index++)
-            _buildOccurrenceRow(index),
-          if (onEdit != null)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: InkWell(
-                onTap: onEdit,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Text(
-                    'Edit Komponen',
-                    style: FontTheme.poppins12w600black().copyWith(
-                      color: BaseColors.purpleHearth,
-                    ),
-                  ),
+          ...rows,
+          if (onEdit != null) ...[
+            const HeightSpace(10),
+            InkWell(
+              onTap: onEdit,
+              child: Text(
+                'Edit Komponen',
+                style: FontTheme.poppins12w600black().copyWith(
+                  color: BaseColors.purpleHearth,
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
   }
 
+  /// One occurrence pill: name, its score (or `Kosong`), and Ruby's number —
+  /// no weight, since the parent row already states it once for the whole
+  /// component.
   Widget _buildOccurrenceRow(int index) {
     final score = breakdown.scores[index];
     final shown = rubyEnabled ? score ?? occurrenceRecommendation : null;
+    final isEmpty = score == null;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: _OccurrenceColors.pillBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         children: [
           Expanded(
-            flex: _ComponentColumns.name,
+            flex: _OccurrenceColumns.name,
             child: Text(
               breakdown.occurrenceName(index),
-              style: FontTheme.poppins12w500black(),
+              style: FontTheme.poppins12w600black(),
             ),
           ),
           Expanded(
-            flex: _ComponentColumns.score,
+            flex: _OccurrenceColumns.score,
             child: Text(
               score?.toStringAsFixed(2) ?? 'Kosong',
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.center,
               style: FontTheme.poppins12w500black().copyWith(
-                color: score == null ? BaseColors.gray3 : BaseColors.mineShaft,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: _ComponentColumns.weight,
-            child: Text(
-              '${formatDouble(breakdown.weightPerOccurrence)}%',
-              textAlign: TextAlign.right,
-              style: FontTheme.poppins12w500black(),
-            ),
-          ),
-          Expanded(
-            flex: _ComponentColumns.recommendation,
-            child: Text(
-              shown?.toStringAsFixed(2) ?? '-',
-              textAlign: TextAlign.right,
-              style: FontTheme.poppins12w500black().copyWith(
-                color: score == null
-                    ? BaseColors.purpleHearth
+                color: isEmpty
+                    ? _OccurrenceColors.placeholder
                     : BaseColors.mineShaft,
               ),
             ),
           ),
-          const SizedBox(width: _ComponentColumns.chevronWidth),
+          Expanded(
+            flex: _OccurrenceColumns.recommendation,
+            child: Text(
+              shown?.toStringAsFixed(2) ?? '-',
+              textAlign: TextAlign.right,
+              // Bold purple only while it's Ruby's prediction rather than a
+              // score the student already has.
+              style: (isEmpty
+                      ? FontTheme.poppins12w700black()
+                      : FontTheme.poppins12w500black())
+                  .copyWith(
+                color: isEmpty ? BaseColors.purpleHearth : BaseColors.mineShaft,
+              ),
+            ),
+          ),
         ],
       ),
     );

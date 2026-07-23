@@ -142,7 +142,15 @@ class KomponenBottomSheet extends StatefulWidget {
 }
 
 class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
-  bool _scoresExpanded = true;
+  /// Whether the per-occurrence score rows are shown beneath the summary.
+  ///
+  /// Edit mode opens collapsed to just the "Rata Rata" row (arrow pointing
+  /// down) when a component has more than one occurrence, per the PM spec —
+  /// the student taps to reveal the per-frequency detail. Add mode opens
+  /// expanded so a freshly bumped frequency is visible as it is filled in.
+  /// With a single occurrence there is no arrow and the row always shows, so
+  /// this only bites once [ComponentFormState.effectiveLength] exceeds one.
+  late bool _scoresExpanded = !widget.isEdit;
 
   /// Rendered in the sheet rather than shown as a toast — see the note on
   /// [KomponenBottomSheet] for why this must not be a Flushbar.
