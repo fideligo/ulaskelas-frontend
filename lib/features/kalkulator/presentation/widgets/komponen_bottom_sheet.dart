@@ -1,65 +1,125 @@
 part of '_widgets.dart';
 
-/// Editing a component as a sheet over the detail page instead of a push.
+/// The exact palette this sheet is specified in.
 ///
-/// Replaces `EditComponentPage`. Because the detail page stays mounted
-/// underneath, saving here just pops — the caller refetches — rather than
-/// rebuilding the route with a locally guessed total the way the page did.
-class EditKomponenBottomSheet extends StatefulWidget {
-  const EditKomponenBottomSheet({
-    required this.id,
-    required this.componentName,
-    required this.componentWeight,
-    super.key,
+/// Held locally rather than in [BaseColors] because these are design-signed
+/// values for the sheet specifically — the nearest tokens differ (`error` is
+/// `#EB5757`, not `#FB2C36`) and silently drifting onto them would be wrong.
+abstract class _SheetColors {
+  static const background = Color(0xFFFFFFFF);
+  static const primary = Color(0xFF5038BC);
+  static const delete = Color(0xFFFB2C36);
+
+  /// Marks the number as Ruby's, not the student's.
+  static const ruby = LinearGradient(
+    colors: [Color(0xFFD293FF), Color(0xFF3F4FB4)],
+  );
+}
+
+/// Add and edit for a grade component, as a sheet over the detail page.
+///
+/// One widget for both modes: the two flows differ only in their title, their
+/// primary label, whether delete is offered, and which submit call runs, so
+/// splitting them would duplicate the whole nullable-grade form.
+class KomponenBottomSheet extends StatefulWidget {
+  const KomponenBottomSheet._({
+    required this.isEdit,
+    this.componentId,
+    this.calculatorId,
+    this.componentName,
+    this.componentWeight,
   });
 
-  final int id;
-  final String componentName;
-  final double componentWeight;
+  final bool isEdit;
 
-  /// Resolves to `true` when the component was saved or deleted, so the caller
+  /// Edit mode only — the subcomponent being edited.
+  final int? componentId;
+
+  /// Add mode only — the calculator the new component hangs off.
+  final int? calculatorId;
+
+  final String? componentName;
+  final double? componentWeight;
+
+  /// Resolves to `true` when something was saved or deleted, so the caller
   /// knows whether it has to refetch.
-  static Future<bool?> show(
+  static Future<bool?> showEdit(
     BuildContext context, {
     required int id,
     required String componentName,
     required double componentWeight,
   }) {
-    return showModalBottomSheet<bool>(
-      context: context,
-      // Required for the sheet to grow past half height and to sit above the
-      // keyboard once a field takes focus.
-      isScrollControlled: true,
-      backgroundColor: BaseColors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => EditKomponenBottomSheet(
-        id: id,
+    return _show(
+      context,
+      KomponenBottomSheet._(
+        isEdit: true,
+        componentId: id,
         componentName: componentName,
         componentWeight: componentWeight,
       ),
     );
   }
 
+  static Future<bool?> showAdd(
+    BuildContext context, {
+    required int calculatorId,
+  }) {
+    return _show(
+      context,
+      KomponenBottomSheet._(
+        isEdit: false,
+        calculatorId: calculatorId,
+      ),
+    );
+  }
+
+  static Future<bool?> _show(BuildContext context, KomponenBottomSheet sheet) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      // Required for the sheet to grow past half height and to sit above the
+      // keyboard once a field takes focus.
+      isScrollControlled: true,
+      // Transparent here, opaque in the child. `showModalBottomSheet` has no
+      // `surfaceTintColor` parameter on this Flutter version — the sheet reads
+      // it from `bottomSheetTheme`, so a background passed here would still be
+      // tinted by Material 3. Painting the fill ourselves is what actually
+      // guarantees #FFFFFF.
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      builder: (_) => sheet,
+    );
+  }
+
   @override
-  State<EditKomponenBottomSheet> createState() =>
-      _EditKomponenBottomSheetState();
+  State<KomponenBottomSheet> createState() => _KomponenBottomSheetState();
 }
 
-class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
+class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
   bool _scoresExpanded = true;
+
+  bool get _isEdit => widget.isEdit;
+
+  String get _title => _isEdit ? 'Edit Komponen' : 'Tambah Komponen';
+
+  String get _primaryLabel => _isEdit ? 'Simpan Nilai' : 'Tambah Komponen';
 
   @override
   void initState() {
     super.initState();
     componentFormRM.setState((s) => s.cleanForm());
-    componentFormRM.state.nameController.text = widget.componentName;
+
+    if (!_isEdit) {
+      // cleanForm already leaves an empty name, empty weight, frequency 1 and
+      // a single blank score controller, which is the whole add-mode default.
+      return;
+    }
+
+    componentFormRM.state.nameController.text = widget.componentName ?? '';
     componentFormRM.state.weightController.text =
-        _formatWeight(widget.componentWeight);
+        _formatWeight(widget.componentWeight ?? 0);
     componentFormRM.setState(
       (s) => s.retrieveDetailedComponent(
-        QueryComponent(scoreComponentId: widget.id),
+        QueryComponent(scoreComponentId: widget.componentId),
       ),
     );
   }
@@ -75,34 +135,40 @@ class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
       padding: EdgeInsets.only(bottom: viewInsets),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHandle(),
-            _buildHeader(),
-            const Divider(height: 1, thickness: 1, color: BaseColors.gray5),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: Form(
-                  key: componentFormRM.state.formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildNameField(),
-                      const HeightSpace(18),
-                      _buildWeightField(),
-                      const HeightSpace(18),
-                      _buildFrequencyRow(),
-                      const HeightSpace(10),
-                      _buildScoresSection(),
-                    ],
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: _SheetColors.background,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHandle(),
+              _buildHeader(),
+              const Divider(height: 1, thickness: 1, color: BaseColors.gray5),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Form(
+                    key: componentFormRM.state.formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildNameField(),
+                        const HeightSpace(18),
+                        _buildWeightField(),
+                        const HeightSpace(18),
+                        _buildFrequencyRow(),
+                        const HeightSpace(10),
+                        _buildScoresSection(),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            _buildActions(),
-          ],
+              _buildActions(),
+            ],
+          ),
         ),
       ),
     );
@@ -126,7 +192,7 @@ class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Edit Komponen', style: FontTheme.poppins16w700black()),
+          Text(_title, style: FontTheme.poppins16w700black()),
           IconButton(
             icon: const Icon(Icons.close, size: 22),
             color: BaseColors.neutral100,
@@ -200,10 +266,7 @@ class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
             hintText: 'Contoh: 7,5',
             suffixIcon: Padding(
               padding: const EdgeInsets.only(right: 16, top: 14),
-              child: Text(
-                '%',
-                style: FontTheme.poppins14w700black(),
-              ),
+              child: Text('%', style: FontTheme.poppins14w700black()),
             ),
             suffixIconConstraints: const BoxConstraints(),
           ),
@@ -384,7 +447,7 @@ class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
                           child: const Icon(
                             Icons.close,
                             size: 16,
-                            color: BaseColors.error,
+                            color: _SheetColors.delete,
                           ),
                         ),
                         suffixIconConstraints: const BoxConstraints(
@@ -398,43 +461,55 @@ class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
                     ),
                   ),
                   const WidthSpace(8),
-                  _buildTargetPill(data, entered),
+                  _buildRubyPill(data, entered),
                 ],
               ),
             ],
           ),
           const HeightSpace(6),
-          const Divider(
-            height: 1,
-            thickness: 0.7,
-            color: BaseColors.gray4,
-          ),
+          const Divider(height: 1, thickness: 0.7, color: BaseColors.gray4),
         ],
       ),
     );
   }
 
-  /// A graded occurrence shows what it scored; an empty one shows what Ruby
-  /// says it still needs.
-  Widget _buildTargetPill(ComponentFormState data, double? entered) {
+  /// Ruby's number for one occurrence: what it scored if graded, what it still
+  /// needs if not. The gradient on both border and digits is what marks it as
+  /// Ruby's suggestion rather than the student's own input.
+  Widget _buildRubyPill(ComponentFormState data, double? entered) {
     final value = entered ?? data.recommendedScore;
     final isOverMax = entered != null && entered > 200;
+    final label = isOverMax ? '???' : _formatNumber(value);
 
     return Container(
       height: 38,
-      width: 58,
-      alignment: Alignment.center,
+      width: 62,
+      // The 1.2 inset is the border: the outer box paints the gradient, the
+      // inner one covers all but its edge.
+      padding: const EdgeInsets.all(1.2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isOverMax ? BaseColors.danger : BaseColors.purpleHearth,
-        ),
+        gradient: isOverMax ? null : _SheetColors.ruby,
+        color: isOverMax ? BaseColors.danger : null,
       ),
-      child: Text(
-        isOverMax ? '???' : _formatNumber(value),
-        style: FontTheme.poppins12w500black().copyWith(
-          color: isOverMax ? BaseColors.danger : BaseColors.purpleHearth,
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: _SheetColors.background,
+          borderRadius: BorderRadius.circular(6.8),
         ),
+        child: isOverMax
+            ? Text(
+                label,
+                style: FontTheme.poppins12w500black().copyWith(
+                  color: BaseColors.danger,
+                ),
+              )
+            : GradientText(
+                label,
+                gradient: _SheetColors.ruby,
+                style: FontTheme.poppins12w500black(),
+              ),
       ),
     );
   }
@@ -475,31 +550,65 @@ class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          InkWell(
-            onTap: _onDelete,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                'Hapus Komponen',
-                style: FontTheme.poppins14w500black().copyWith(
-                  color: BaseColors.error,
-                  fontWeight: FontWeight.w700,
+          // Nothing to delete yet in add mode.
+          if (_isEdit)
+            InkWell(
+              onTap: _onDelete,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'Hapus Komponen',
+                  style: FontTheme.poppins14w500black().copyWith(
+                    color: _SheetColors.delete,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
-          ),
           const HeightSpace(8),
-          OnReactive(
-            () => SizedBox(
-              width: double.infinity,
-              child: AutoLayoutButton(
-                text: 'Simpan Nilai',
-                isLoading: componentFormRM.state.isLoading,
-                onTap: _onSave,
-              ),
+          OnReactive(_buildPrimaryButton),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton() {
+    final isLoading = componentFormRM.state.isLoading;
+
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: _SheetColors.primary,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: isLoading ? null : _onSave,
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation(
+                          _SheetColors.background,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      _primaryLabel,
+                      style: FontTheme.poppins14w600black().copyWith(
+                        color: _SheetColors.background,
+                      ),
+                    ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -517,10 +626,18 @@ class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
       return;
     }
 
+    if (!_isEdit) {
+      MixpanelService.track('calculator_add_course_component');
+    }
+
     await componentRM.setState((s) => s.componentChange = true);
 
     try {
-      await componentFormRM.state.submitEditForm(widget.id);
+      if (_isEdit) {
+        await componentFormRM.state.submitEditForm(widget.componentId!);
+      } else {
+        await componentFormRM.state.submitForm(widget.calculatorId!);
+      }
     } catch (_) {
       // The repository folds failures by throwing. Swallowing it here keeps
       // the sheet open with the user's input intact instead of leaving a dead
@@ -554,7 +671,7 @@ class _EditKomponenBottomSheetState extends State<EditKomponenBottomSheet> {
 
     await componentRM.setState((s) => s.componentChange = true);
     await componentRM.setState(
-      (s) => s.deleteComponent(QueryComponent(id: widget.id)),
+      (s) => s.deleteComponent(QueryComponent(id: widget.componentId)),
     );
 
     if (!mounted) {

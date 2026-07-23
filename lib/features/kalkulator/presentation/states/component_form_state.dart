@@ -18,8 +18,10 @@ class ComponentFormState {
   final _weightController = TextEditingController();
   final _frequency = TextEditingController();
 
+  static const _defaultRecommendedScore = 85.0;
+
   String _previousFrequency = '1';
-  double _recommendedScore = 85;
+  double _recommendedScore = _defaultRecommendedScore;
   bool isLoading = false;
   bool justVisited = true;
 
@@ -50,8 +52,8 @@ class ComponentFormState {
         _formData.score![1] = null;
       }
       _previousFrequency = _frequency.text;
-      _recommendedScore =
-          (detail['recommended_score'] as num?)?.toDouble() ?? 85;
+      _recommendedScore = (detail['recommended_score'] as num?)?.toDouble() ??
+          _defaultRecommendedScore;
       justVisited = true;
     });
     await getCachedRecommendation();
@@ -195,6 +197,9 @@ class ComponentFormState {
   void cleanForm() {
     _formData = ComponentData();
     _formData.score = <int, double?>{};
+    // Otherwise a fresh form inherits the recommendation of whatever
+    // component was open last.
+    _recommendedScore = _defaultRecommendedScore;
 
     _nameController.text = '';
     _weightController.text = '';

@@ -242,24 +242,22 @@ class _CalculatorComponentPageState
     );
   }
 
-  /// Refresh on the way back so an edit shows up straight away.
+  /// Both flows open over the page rather than pushing a route, so on save we
+  /// just refetch instead of rebuilding this page with a locally guessed
+  /// total.
   Future<void> _addComponent() async {
-    await nav.goToComponentFormPage(
-      givenSemester: widget.givenSemester,
-      courseId: widget.courseId,
+    final changed = await KomponenBottomSheet.showAdd(
+      context,
       calculatorId: widget.calculatorId,
-      courseName: widget.courseName,
-      totalScore: widget.totalScore < 0 ? 0 : widget.totalScore,
-      totalPercentage: widget.totalPercentage,
-      courseSKS: widget.courseSKS,
     );
-    await retrieveData();
+
+    if (changed ?? false) {
+      await retrieveData();
+    }
   }
 
-  /// Opens over the page rather than pushing a route, so on save we just
-  /// refetch instead of rebuilding this page with a locally guessed total.
   Future<void> _editComponent(ComponentBreakdown breakdown) async {
-    final changed = await EditKomponenBottomSheet.show(
+    final changed = await KomponenBottomSheet.showEdit(
       context,
       id: breakdown.id,
       componentName: breakdown.name,
