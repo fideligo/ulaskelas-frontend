@@ -27,6 +27,7 @@ import '../../../matkul/search/presentation/widgets/_widgets.dart';
 import '../../data/models/calculator_model.dart';
 import '../../data/models/semester_model.dart';
 
+part 'action_success_banner.dart';
 part 'add_semester_dialog.dart';
 part 'autofill_dialog.dart';
 part 'card_active_course.dart';

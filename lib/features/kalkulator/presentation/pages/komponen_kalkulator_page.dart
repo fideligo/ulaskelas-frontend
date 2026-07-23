@@ -27,10 +27,33 @@ class CalculatorComponentPage extends StatefulWidget {
 
 class _CalculatorComponentPageState
     extends BaseStateful<CalculatorComponentPage> {
+  /// Confirmation strip for the last add/edit/delete, cleared on a timer.
+  KomponenSheetResult? _banner;
+  Timer? _bannerTimer;
+
   @override
   void init() {
     retrieveData();
     calculatorComponentRM.state.loadCourseType(widget.courseId);
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showBanner(KomponenSheetResult result) {
+    _bannerTimer?.cancel();
+    setState(() => _banner = result);
+    _bannerTimer = Timer(const Duration(seconds: 4), _dismissBanner);
+  }
+
+  void _dismissBanner() {
+    _bannerTimer?.cancel();
+    if (mounted) {
+      setState(() => _banner = null);
+    }
   }
 
   @override
@@ -51,17 +74,38 @@ class _CalculatorComponentPageState
 
   @override
   Widget buildNarrowLayout(BuildContext context, SizingInformation sizeInfo) {
+    final banner = _banner;
+
     return SafeArea(
-      child: RefreshIndicator(
-        key: refreshIndicatorKey,
-        onRefresh: retrieveData,
-        child: OnBuilder<CalculatorComponentState>.all(
-          listenTo: calculatorComponentRM,
-          onIdle: WaitingView.new,
-          onWaiting: WaitingView.new,
-          onError: (dynamic error, refresh) => _buildError(),
-          onData: _buildDetail,
-        ),
+      child: Column(
+        children: [
+          // Sits above the scroll view so it stays visible wherever the user
+          // has scrolled to.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: banner == null
+                ? const SizedBox(width: double.infinity)
+                : ActionSuccessBanner(
+                    message: banner.message,
+                    onDismiss: _dismissBanner,
+                  ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              key: refreshIndicatorKey,
+              onRefresh: retrieveData,
+              child: OnBuilder<CalculatorComponentState>.all(
+                listenTo: calculatorComponentRM,
+                onIdle: WaitingView.new,
+                onWaiting: WaitingView.new,
+                onError: (dynamic error, refresh) => _buildError(),
+                onData: _buildDetail,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -246,27 +290,54 @@ class _CalculatorComponentPageState
   /// just refetch instead of rebuilding this page with a locally guessed
   /// total.
   Future<void> _addComponent() async {
-    final changed = await KomponenBottomSheet.showAdd(
+    final result = await KomponenBottomSheet.showAdd(
       context,
       calculatorId: widget.calculatorId,
     );
 
-    if (changed ?? false) {
-      await retrieveData();
+    if (result == null) {
+      return;
+    }
+
+    await retrieveData();
+    if (mounted) {
+      _showBanner(result);
     }
   }
 
   Future<void> _editComponent(ComponentBreakdown breakdown) async {
-    final changed = await KomponenBottomSheet.showEdit(
+    final result = await KomponenBottomSheet.showEdit(
       context,
       id: breakdown.id,
       componentName: breakdown.name,
       componentWeight: breakdown.weight,
     );
 
-    if (changed ?? false) {
+    if (result == null) {
+      return;
+    }
+
+    if (result.action == KomponenSheetAction.deleted) {
+      // Runs here, not in the sheet: deleteComponent raises a Flushbar, and a
+      // Flushbar is a route. Raised while the sheet was still open it would
+      // sit on top of it, and the sheet's own pop would take the toast
+      // instead — leaving the navigator to assert when the toast expired.
+      await _deleteComponent(breakdown);
+    } else {
       await retrieveData();
     }
+
+    if (mounted) {
+      _showBanner(result);
+    }
+  }
+
+  Future<void> _deleteComponent(ComponentBreakdown breakdown) async {
+    await componentRM.setState((s) => s.componentChange = true);
+    await componentRM.setState(
+      (s) => s.deleteComponent(QueryComponent(id: breakdown.id)),
+    );
+    await retrieveData();
   }
 
   Future<void> _deleteCourse() async {

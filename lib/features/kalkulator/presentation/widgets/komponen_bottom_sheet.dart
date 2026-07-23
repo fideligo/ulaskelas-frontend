@@ -16,11 +16,56 @@ abstract class _SheetColors {
   );
 }
 
+/// What the user did before the sheet closed.
+enum KomponenSheetAction {
+  /// An existing component's scores were edited.
+  saved,
+
+  /// A new component was created.
+  added,
+
+  /// The user confirmed deletion. The sheet does **not** delete — the caller
+  /// owns the call, so the success toast is pushed onto a navigator the sheet
+  /// is no longer sitting on. See [_KomponenBottomSheetState._onDelete].
+  deleted,
+}
+
+/// The sheet's outcome, handed back to the caller on pop.
+///
+/// Carries [name] because the confirmation copy quotes the component, and by
+/// the time the caller runs, the shared form state has already been cleared.
+class KomponenSheetResult {
+  const KomponenSheetResult({required this.action, required this.name});
+
+  final KomponenSheetAction action;
+  final String name;
+
+  /// The line shown in the page's confirmation banner.
+  String get message {
+    switch (action) {
+      case KomponenSheetAction.saved:
+        return 'Nilai $name tersimpan! Rekomendasi diupdate';
+      case KomponenSheetAction.added:
+        return 'Komponen $name tersimpan! Rekomendasi diupdate';
+      case KomponenSheetAction.deleted:
+        return 'Komponen $name berhasil dihapus!';
+    }
+  }
+}
+
 /// Add and edit for a grade component, as a sheet over the detail page.
 ///
 /// One widget for both modes: the two flows differ only in their title, their
 /// primary label, whether delete is offered, and which submit call runs, so
 /// splitting them would duplicate the whole nullable-grade form.
+///
+/// The sheet deliberately pushes no routes of its own. Every messenger in this
+/// app is a `Flushbar`, and a Flushbar is a route: showing one puts it on top
+/// of the sheet, and the sheet's own `Navigator.pop` would then pop the toast
+/// instead of the sheet — which then trips
+/// `entry.currentState == _RouteLifecycle.popping` when the toast's 1800ms
+/// timer tries to dismiss a route that is already gone. So failures render
+/// inline here, and success toasts belong to the caller.
 class KomponenBottomSheet extends StatefulWidget {
   const KomponenBottomSheet._({
     required this.isEdit,
@@ -41,9 +86,8 @@ class KomponenBottomSheet extends StatefulWidget {
   final String? componentName;
   final double? componentWeight;
 
-  /// Resolves to `true` when something was saved or deleted, so the caller
-  /// knows whether it has to refetch.
-  static Future<bool?> showEdit(
+  /// Resolves to the outcome, or null when the user simply dismissed it.
+  static Future<KomponenSheetResult?> showEdit(
     BuildContext context, {
     required int id,
     required String componentName,
@@ -60,7 +104,7 @@ class KomponenBottomSheet extends StatefulWidget {
     );
   }
 
-  static Future<bool?> showAdd(
+  static Future<KomponenSheetResult?> showAdd(
     BuildContext context, {
     required int calculatorId,
   }) {
@@ -73,8 +117,11 @@ class KomponenBottomSheet extends StatefulWidget {
     );
   }
 
-  static Future<bool?> _show(BuildContext context, KomponenBottomSheet sheet) {
-    return showModalBottomSheet<bool>(
+  static Future<KomponenSheetResult?> _show(
+    BuildContext context,
+    KomponenBottomSheet sheet,
+  ) {
+    return showModalBottomSheet<KomponenSheetResult>(
       context: context,
       // Required for the sheet to grow past half height and to sit above the
       // keyboard once a field takes focus.
@@ -96,6 +143,10 @@ class KomponenBottomSheet extends StatefulWidget {
 
 class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
   bool _scoresExpanded = true;
+
+  /// Rendered in the sheet rather than shown as a toast — see the note on
+  /// [KomponenBottomSheet] for why this must not be a Flushbar.
+  String? _formError;
 
   bool get _isEdit => widget.isEdit;
 
@@ -199,7 +250,8 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
             splashRadius: 20,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            onPressed: () => Navigator.of(context).pop(false),
+            // No result: dismissed without saving, so the caller does nothing.
+            onPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
@@ -550,6 +602,7 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_formError != null) _buildFormError(_formError!),
           // Nothing to delete yet in add mode.
           if (_isEdit)
             InkWell(
@@ -567,6 +620,27 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
             ),
           const HeightSpace(8),
           OnReactive(_buildPrimaryButton),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormError(String message) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, size: 16, color: _SheetColors.delete),
+          const WidthSpace(6),
+          Expanded(
+            child: Text(
+              message,
+              style: FontTheme.poppins12w400black().copyWith(
+                color: _SheetColors.delete,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -621,10 +695,13 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
     componentFormRM.state.justVisited = false;
 
     if (!componentFormRM.state.formKey.currentState!.validate()) {
-      WarningMessenger('Pastikan semua field sudah terisi dengan benar!')
-          .show(context);
+      setState(
+        () => _formError = 'Pastikan semua field sudah terisi dengan benar!',
+      );
       return;
     }
+
+    setState(() => _formError = null);
 
     if (!_isEdit) {
       MixpanelService.track('calculator_add_course_component');
@@ -639,11 +716,11 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
         await componentFormRM.state.submitForm(widget.calculatorId!);
       }
     } catch (_) {
-      // The repository folds failures by throwing. Swallowing it here keeps
-      // the sheet open with the user's input intact instead of leaving a dead
-      // spinner behind an uncaught async error.
+      // The repository folds failures by throwing. Reporting inline keeps the
+      // sheet open with the user's input intact, and — unlike a toast — pushes
+      // no route that a later successful save would then pop by mistake.
       if (mounted) {
-        ErrorMessenger('Gagal menyimpan komponen. Coba lagi.').show(context);
+        setState(() => _formError = 'Gagal menyimpan komponen. Coba lagi.');
       }
       return;
     }
@@ -651,10 +728,27 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
     if (!mounted) {
       return;
     }
+
+    // Read before cleanForm() — it clears the controller this name comes from.
+    final name = componentFormRM.state.nameController.text.trim();
+
     componentFormRM.state.cleanForm();
-    Navigator.of(context).pop(true);
+    Navigator.of(context).pop(
+      KomponenSheetResult(
+        action:
+            _isEdit ? KomponenSheetAction.saved : KomponenSheetAction.added,
+        name: name,
+      ),
+    );
   }
 
+  /// Confirms, then closes and hands the deletion to the caller.
+  ///
+  /// The API call deliberately does not run here. `deleteComponent` shows a
+  /// `SuccessMessenger`, which pushes a Flushbar route on top of this sheet;
+  /// popping afterwards would take the toast rather than the sheet and crash
+  /// the navigator when the toast's timer expires. Closing first means the
+  /// toast lands on the detail page's navigator with nothing above it.
   Future<void> _onDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -669,16 +763,13 @@ class _KomponenBottomSheetState extends State<KomponenBottomSheet> {
       return;
     }
 
-    await componentRM.setState((s) => s.componentChange = true);
-    await componentRM.setState(
-      (s) => s.deleteComponent(QueryComponent(id: widget.componentId)),
-    );
-
-    if (!mounted) {
-      return;
-    }
     componentFormRM.state.cleanForm();
-    Navigator.of(context).pop(true);
+    Navigator.of(context).pop(
+      KomponenSheetResult(
+        action: KomponenSheetAction.deleted,
+        name: widget.componentName ?? 'Komponen',
+      ),
+    );
   }
 
   /// Trims the `.0` off whole numbers so a weight of 7.5 reads `7.5` and 10
