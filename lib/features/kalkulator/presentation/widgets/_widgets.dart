@@ -13,7 +13,9 @@ import 'package:ulaskelas/features/kalkulator/domain/entities/component_breakdow
 import 'package:ulaskelas/features/kalkulator/domain/entities/course_status.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/grade_target.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/query_calculator.dart';
+import 'package:ulaskelas/features/kalkulator/domain/entities/query_component.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/semester_display.dart';
+import 'package:ulaskelas/features/kalkulator/presentation/states/_states.dart';
 import 'package:ulaskelas/services/_services.dart';
 
 import '../../../../core/bases/states/_states.dart';
@@ -45,6 +47,7 @@ part 'fill_method_placeholder.dart';
 part 'frequency_controller.dart';
 part 'gradient_border_button.dart';
 part 'gradient_text.dart';
+part 'edit_komponen_bottom_sheet.dart';
 part 'info_pill.dart';
 part 'recommended_score_box.dart';
 part 'scores_field_input.dart';

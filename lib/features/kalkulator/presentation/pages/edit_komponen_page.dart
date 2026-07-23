@@ -165,15 +165,7 @@ class _EditComponentPageState extends BaseStateful<EditComponentPage> {
       return;
     }
 
-    final allIsEmpty = componentFormRM.state.averageScore() == null;
-    final oneIsEmpty = componentFormRM.state.scoreControllers.any(
-      (element) => element.text.isEmpty,
-    );
-    final isSingleSubcomponent =
-        componentFormRM.state.scoreControllers.length == 1;
-
-    if (componentFormRM.state.formKey.currentState!.validate() &&
-        (!oneIsEmpty || allIsEmpty || isSingleSubcomponent)) {
+    if (componentFormRM.state.formKey.currentState!.validate()) {
       await componentRM.setState((s) => s.componentChange = true);
       await componentFormRM.state.submitEditForm(widget.id);
       await Future.delayed(const Duration(milliseconds: 150));

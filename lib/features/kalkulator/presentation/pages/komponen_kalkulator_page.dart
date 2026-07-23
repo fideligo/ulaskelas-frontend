@@ -256,21 +256,19 @@ class _CalculatorComponentPageState
     await retrieveData();
   }
 
+  /// Opens over the page rather than pushing a route, so on save we just
+  /// refetch instead of rebuilding this page with a locally guessed total.
   Future<void> _editComponent(ComponentBreakdown breakdown) async {
-    await nav.goToEditComponentPage(
+    final changed = await EditKomponenBottomSheet.show(
+      context,
       id: breakdown.id,
-      givenSemester: widget.givenSemester,
-      courseId: widget.courseId,
-      calculatorId: widget.calculatorId,
-      courseName: widget.courseName,
-      totalScore: widget.totalScore < 0 ? 0 : widget.totalScore,
-      totalPercentage: widget.totalPercentage,
       componentName: breakdown.name,
-      componentScore: breakdown.average ?? 0,
       componentWeight: breakdown.weight,
-      courseSKS: widget.courseSKS,
     );
-    await retrieveData();
+
+    if (changed ?? false) {
+      await retrieveData();
+    }
   }
 
   Future<void> _deleteCourse() async {

@@ -12,7 +12,7 @@ class ComponentFormState {
 
   late ComponentRepository _repo;
   final formKey = GlobalKey<FormState>();
-  var _formData = ComponentData();
+  var _formData = ComponentData()..score = <int, double?>{};
   final _nameController = TextEditingController();
   final _scoreControllers = <TextEditingController>[TextEditingController()];
   final _weightController = TextEditingController();
@@ -32,15 +32,26 @@ class ComponentFormState {
       throw failure;
     }, (result) {
       final detail = result.data;
-      _frequency.text = detail['frequency'].toString();
+      final rawScores = (detail['scores'] as List?) ?? const [];
+      _frequency.text = rawScores.length.toString();
       _scoreControllers.clear();
-      for (var i = 0; i < int.parse(_frequency.text); i++) {
+      _formData.score!.clear();
+      for (var i = 0; i < rawScores.length; i++) {
+        // The API sends whole numbers as int, so the map — typed
+        // `Map<int, double?>` — needs the coercion or it throws at runtime.
+        final score = (rawScores[i] as num?)?.toDouble();
         _scoreControllers.add(TextEditingController());
-        scoreControllers.last.text =
-            detail['scores'][i] == null ? '' : detail['scores'][i].toString();
-        _formData.score![i + 1] = detail['scores'][i];
+        scoreControllers.last.text = score == null ? '' : _formatScore(score);
+        _formData.score![i + 1] = score;
       }
-      _recommendedScore = detail['recommended_score']?.toDouble() ?? 85;
+      if (_scoreControllers.isEmpty) {
+        _scoreControllers.add(TextEditingController());
+        _frequency.text = '1';
+        _formData.score![1] = null;
+      }
+      _previousFrequency = _frequency.text;
+      _recommendedScore =
+          (detail['recommended_score'] as num?)?.toDouble() ?? 85;
       justVisited = true;
     });
     await getCachedRecommendation();
@@ -52,11 +63,13 @@ class ComponentFormState {
     componentFormRM.notify();
     final result = <String, dynamic>{};
 
+    final scores = scoresPayload();
+
     result['calculator_id'] = calculatorId;
     result['name'] = _formData.name;
     result['weight'] = _formData.weight;
-    result['frequency'] = int.parse(_frequency.text);
-    result['scores'] = _formData.score!.values.toList();
+    result['frequency'] = scores.length;
+    result['scores'] = scores;
 
     final resp = await _repo.createComponent(result);
     isLoading = false;
@@ -78,11 +91,13 @@ class ComponentFormState {
     componentFormRM.notify();
     final result = <String, dynamic>{};
 
+    final scores = scoresPayload();
+
     result['score_component_id'] = id;
     result['name'] = _formData.name;
     result['weight'] = _formData.weight;
-    result['frequency'] = int.parse(_frequency.text);
-    result['scores'] = _formData.score!.values.toList();
+    result['frequency'] = scores.length;
+    result['scores'] = scores;
 
     final resp = await _repo.editComponent(result);
     isLoading = false;
@@ -114,19 +129,66 @@ class ComponentFormState {
     _formData.name = nameController.text;
   }
 
+  /// How many occurrences are actually addressable right now.
+  ///
+  /// [_frequency] is the live controller behind the stepper's text field, so
+  /// typing in it moves ahead of [_scoreControllers], which only resync on
+  /// submit. Reading the raw text as a loop bound therefore overruns the list.
+  int get effectiveLength {
+    final parsed = int.tryParse(_frequency.text) ?? _scoreControllers.length;
+    if (parsed < 0 || _scoreControllers.isEmpty) {
+      return 0;
+    }
+    final available = _scoreControllers.length;
+    return parsed < available ? parsed : available;
+  }
+
+  /// An occurrence left blank stays `null` — it is "not graded yet", which is
+  /// not the same as scoring a zero.
+  double? parseScore(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    return double.tryParse(trimmed.replaceAll(',', '.'));
+  }
+
+  /// The scores exactly as typed, nulls included, taken from the controllers
+  /// so what is sent always matches what is on screen.
+  List<double?> scoresPayload() => [
+        for (var i = 0; i < effectiveLength; i++)
+          parseScore(_scoreControllers[i].text),
+      ];
+
+  String _formatScore(double score) =>
+      score == score.roundToDouble() ? score.toStringAsFixed(0) : '$score';
+
   void setScore(int index) {
-    final normalizedValue =
-        scoreControllers[index - 1].text.replaceAll(',', '.');
-    _formData.score![index] = double.tryParse(normalizedValue);
+    if (index < 1 || index > _scoreControllers.length) {
+      return;
+    }
+    _formData.score![index] = parseScore(scoreControllers[index - 1].text);
 
     if (kDebugMode) {
       print('Form Data: ${_formData.score}');
     }
   }
 
+  /// Wipes one occurrence back to "not graded yet" — the `x` on each row.
+  void clearScore(int index) {
+    if (index < 1 || index > _scoreControllers.length) {
+      return;
+    }
+    _scoreControllers[index - 1].clear();
+    _formData.score![index] = null;
+    componentFormRM.notify();
+  }
+
   void setWeight() {
-    final normalizedValue = weightController.text.replaceAll(',', '.');
-    _formData.weight = double.parse(normalizedValue);
+    final normalizedValue = weightController.text.trim().replaceAll(',', '.');
+    // The field validator blocks anything unparseable before this runs; the
+    // fallback keeps the last good weight rather than throwing on a stray call.
+    _formData.weight = double.tryParse(normalizedValue) ?? _formData.weight;
   }
 
   /// Cleaning form when success submitting form
@@ -146,7 +208,12 @@ class ComponentFormState {
   }
 
   void decreaseFrequency() {
-    final currentLength = int.parse(_frequency.text);
+    // Not `int.parse`: the stepper's text field can be sitting empty.
+    final currentLength =
+        int.tryParse(_frequency.text) ?? _scoreControllers.length;
+    if (currentLength <= 1 || _scoreControllers.length <= 1) {
+      return;
+    }
 
     _formData.score!.remove(currentLength);
 
@@ -164,10 +231,12 @@ class ComponentFormState {
   }
 
   void increaseFrequency() {
-    _frequency.text = (int.parse(_frequency.text) + 1).toString();
+    final currentLength =
+        int.tryParse(_frequency.text) ?? _scoreControllers.length;
+    _frequency.text = (currentLength + 1).toString();
     _scoreControllers.add(TextEditingController());
 
-    _formData.score![int.parse(_frequency.text)] = null;
+    _formData.score![currentLength + 1] = null;
 
     if (kDebugMode) {
       print('Frequency: ${_frequency.text}');
@@ -214,18 +283,27 @@ class ComponentFormState {
     componentFormRM.notify();
   }
 
+  /// Average across the occurrences that actually have a score.
+  ///
+  /// A blank occurrence is left out of both the sum and the divisor, so one
+  /// quiz of 80 out of two scheduled averages 80, not 40. Null only when
+  /// nothing at all is filled — which the UI renders as `Kosong`. Mirrors
+  /// [ComponentBreakdown.average] so the sheet and the detail page agree.
   double? averageScore() {
     var sum = 0.0;
     var valid = 0;
 
-    final length = int.tryParse(_frequency.text) ?? 1;
-
-    for (var i = 0; i < length; i++) {
-      final normalizedValue = _scoreControllers[i].text.replaceAll(',', '.');
-      sum += double.tryParse(normalizedValue) ?? 0;
-      valid++;
+    for (var i = 0; i < effectiveLength; i++) {
+      final score = parseScore(_scoreControllers[i].text);
+      if (score != null) {
+        sum += score;
+        valid++;
+      }
     }
-    return sum != 0 && valid != 0 ? sum / valid : null;
+
+    // Deliberately not `sum != 0`: a genuine all-zero average is a real score,
+    // not an empty component.
+    return valid == 0 ? null : sum / valid;
   }
 
   final initRecommendation = [

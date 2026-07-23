@@ -180,15 +180,7 @@ class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
     }
     MixpanelService.track('calculator_add_course_component');
 
-    final allIsEmpty = componentFormRM.state.averageScore() == null;
-    final oneIsEmpty = componentFormRM.state.scoreControllers.any(
-      (element) => element.text.isEmpty,
-    );
-    final isSingleSubcomponent =
-        componentFormRM.state.scoreControllers.length == 1;
-
-    if (componentFormRM.state.formKey.currentState!.validate() &&
-        (!oneIsEmpty || allIsEmpty || isSingleSubcomponent)) {
+    if (componentFormRM.state.formKey.currentState!.validate()) {
       // progressDialogue(context);
       await componentRM.setState((s) => s.componentChange = true);
       await componentFormRM.state.submitForm(widget.calculatorId);
