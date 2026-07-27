@@ -40,8 +40,10 @@ class Config {
     await Pref.init();
     await MixpanelService.init();
 
-    // TODO(fauzi): Implement notification plugin
-    // await notificationPlugin.init();
+    // Must follow Pref.init, since BadgeService reads the persisted count on
+    // start. Permission is not requested here; it is deferred until after auth
+    // so that the OS sheet never appears over the splash screen.
+    await NotificationService.init();
 
     ///Initialize Future variables
 

@@ -12,6 +12,7 @@ import 'package:ulaskelas/core/bases/widgets/confirmation_modal_dialog.dart';
 import 'package:ulaskelas/core/theme/_theme.dart';
 import 'package:ulaskelas/services/_services.dart';
 import 'package:ulaskelas/services/launch_service.dart';
+import 'package:ulaskelas/services/notification/routing/notification_router.dart';
 import 'package:ulaskelas/services/versioning/check_version.dart';
 
 import 'core/environment/_environment.dart';
@@ -83,6 +84,13 @@ A new version of this app available on the store, please update into the newer v
 
   void mainPageRoute() {
     nav.replaceToMainPage();
+    // Deferred by one frame so that MainPage is mounted before a deep link can
+    // switch its tab. The future returned by replaceToMainPage cannot be used
+    // for this: it is a pushReplacement, which completes only once MainPage is
+    // itself popped.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(NotificationRouter.attach());
+    });
   }
 
   void onboardingPageRoute() {

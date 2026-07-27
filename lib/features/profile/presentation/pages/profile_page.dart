@@ -5,11 +5,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ristek_material_component/ristek_material_component.dart';
 import 'package:ulaskelas/core/bases/states/_states.dart';
+import 'package:ulaskelas/core/environment/_environment.dart';
 import 'package:ulaskelas/core/theme/_theme.dart';
 import 'package:ulaskelas/core/utils/in_app_tour/showcase_flow.dart';
 import 'package:ulaskelas/features/matkul/search/presentation/widgets/_widgets.dart';
 import 'package:ulaskelas/features/profile/presentation/widgets/profile_data.dart';
 import 'package:ulaskelas/services/_services.dart';
+import 'package:ulaskelas/services/notification/dev/dev_notification_menu.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({
@@ -21,6 +23,11 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends BaseStateful<ProfilePage> {
+  static const int _devMenuTapCount = 7;
+
+  int _avatarTaps = 0;
+  Timer? _avatarTapTimer;
+
   @override
   void init() {}
 
@@ -33,6 +40,12 @@ class _ProfilePageState extends BaseStateful<ProfilePage> {
         showInAppTourClosing(context);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _avatarTapTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -64,10 +77,13 @@ class _ProfilePageState extends BaseStateful<ProfilePage> {
             child: ListView(
               children: <Widget>[
                 const SizedBox(height: 42),
-                Icon(
-                  Icons.account_circle,
-                  size: 140,
-                  color: Colors.grey[300],
+                GestureDetector(
+                  onTap: _onAvatarTap,
+                  child: Icon(
+                    Icons.account_circle,
+                    size: 140,
+                    color: Colors.grey[300],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 ProfileData(
@@ -139,7 +155,24 @@ class _ProfilePageState extends BaseStateful<ProfilePage> {
   }
 
   Future<void> _logout() async {
-    Cleaner().cleanWhenLogout();
+    await Cleaner().cleanWhenLogout();
     unawaited(nav.replaceToSsoPage());
+  }
+
+  /// Hidden entry point to the notification simulator: seven taps on the
+  /// avatar. Inert in production, where [showDevNotificationMenu] returns
+  /// immediately.
+  void _onAvatarTap() {
+    if (!Config.isDevelopment) return;
+    _avatarTapTimer?.cancel();
+    _avatarTaps++;
+    if (_avatarTaps >= _devMenuTapCount) {
+      _avatarTaps = 0;
+      unawaited(showDevNotificationMenu(context));
+      return;
+    }
+    // Taps must be consecutive; otherwise the counter would accumulate across
+    // ordinary use and eventually open the sheet.
+    _avatarTapTimer = Timer(const Duration(seconds: 1), () => _avatarTaps = 0);
   }
 }

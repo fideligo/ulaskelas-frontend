@@ -1,11 +1,15 @@
 // Created by Muhamad Fauzi Ridwan on 24/08/21.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ristek_material_component/ristek_material_component.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:states_rebuilder/states_rebuilder.dart';
 import 'package:ulaskelas/features/kalkulator/presentation/pages/_pages.dart';
 import 'package:ulaskelas/services/_services.dart';
+import 'package:ulaskelas/services/notification/_notification.dart';
 import 'package:ulaskelas/src/bar/_bar.dart';
 import 'core/bases/states/_states.dart';
 import 'core/utils/in_app_tour/showcase_flow.dart';
@@ -21,8 +25,8 @@ class MainPage extends StatefulWidget {
   _MainPageState createState() => _MainPageState();
 }
 
-class _MainPageState extends BaseStateful<MainPage> {
-  late int _selectedIndex;
+class _MainPageState extends BaseStateful<MainPage>
+    with WidgetsBindingObserver {
   late List<Widget> _children;
 
   @override
@@ -30,7 +34,7 @@ class _MainPageState extends BaseStateful<MainPage> {
     _children = <Widget>[
       HomePage(
         onSeeAllCourse: () {
-          setState(() => _selectedIndex = 1);
+          mainTabRM.state = MainTab.matkul;
           MixpanelService.track('view_all_courses');
         },
       ),
@@ -40,22 +44,46 @@ class _MainPageState extends BaseStateful<MainPage> {
       const CalculatorPage(),
       const ProfilePage(),
     ];
-    _selectedIndex = 0;
   }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Pref.getBool('doneAppTour') == false ||
-          Pref.getBool('doneAppTour') == null) {
+      final tourDone = Pref.getBool('doneAppTour') ?? false;
+      if (!tourDone) {
         showInAppTourOpening(navbarContext!);
       }
+      // The permission sheet would otherwise overlay the in-app tour dialog,
+      // so first-run users are prompted on a later launch.
+      unawaited(_onFirstFrame(askPermission: tourDone));
     });
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
       overlays: [SystemUiOverlay.top],
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Returning to the app marks pending reminders as seen.
+    if (state == AppLifecycleState.resumed) {
+      unawaited(BadgeService.reset());
+    }
+  }
+
+  Future<void> _onFirstFrame({required bool askPermission}) async {
+    await BadgeService.reset();
+    if (!askPermission) return;
+    await NotificationPermission.requestIfNeeded();
   }
 
   @override
@@ -76,7 +104,10 @@ class _MainPageState extends BaseStateful<MainPage> {
     SizingInformation sizeInfo,
   ) {
     return SafeArea(
-      child: _children[_selectedIndex],
+      child: OnBuilder<int>.data(
+        listenTo: mainTabRM,
+        builder: (index) => _children[index],
+      ),
     );
   }
 
@@ -95,50 +126,63 @@ class _MainPageState extends BaseStateful<MainPage> {
     return ShowCaseWidget(
       builder: (context) {
         navbarContext = context;
-        return NewRistekBotNavBar(
-          initialActiveIndex: _selectedIndex,
-          onTap: (int index) {
-            switch (index) {
-              case 1:
-                MixpanelService.track('open_courses');
-              case 2:
-                MixpanelService.track('open_askfriends');
-              case 3:
-                MixpanelService.track('open_calculator');
-              case 4:
-                MixpanelService.track('open_profile');
-            }
-            setState(() => _selectedIndex = index);
-          },
-          items: const [
-            NewRistekBotNavItem(
-              icon: Icons.home,
-              text: 'Beranda',
-            ),
-            NewRistekBotNavItem(
-              icon: Icons.list_alt,
-              text: 'Matkul',
-            ),
-            // RistekBotNavItem(            this page has been shut down
-            //   icon: Icons.leaderboard,      for ulaskelas revamp
-            //   text: 'Klasemen',               changed into tanya teman
-            // ),
-            NewRistekBotNavItem(
-              svgIcon: 'assets/icons/tanyateman.svg',
-              text: 'Tanya Teman',
-            ),
-            NewRistekBotNavItem(
-              icon: Icons.calculate,
-              text: 'Kalkulator',
-            ),
-            NewRistekBotNavItem(
-              icon: Icons.account_circle,
-              text: 'Profil',
-            ),
-          ],
+        // The bar recomputes `isSelected` from initialActiveIndex on every
+        // build and holds no internal selection, so rebuilding it on mainTabRM
+        // keeps the highlight in sync with the body, including when a deep
+        // link changes the tab from outside the widget tree.
+        return OnBuilder<int>.data(
+          listenTo: mainTabRM,
+          builder: (index) => NewRistekBotNavBar(
+            initialActiveIndex: index,
+            onTap: _onTabTapped,
+            items: const [
+              NewRistekBotNavItem(
+                icon: Icons.home,
+                text: 'Beranda',
+              ),
+              NewRistekBotNavItem(
+                icon: Icons.list_alt,
+                text: 'Matkul',
+              ),
+              // RistekBotNavItem(            this page has been shut down
+              //   icon: Icons.leaderboard,      for ulaskelas revamp
+              //   text: 'Klasemen',               changed into tanya teman
+              // ),
+              NewRistekBotNavItem(
+                svgIcon: 'assets/icons/tanyateman.svg',
+                text: 'Tanya Teman',
+              ),
+              NewRistekBotNavItem(
+                icon: Icons.calculate,
+                text: 'Kalkulator',
+              ),
+              NewRistekBotNavItem(
+                icon: Icons.account_circle,
+                text: 'Profil',
+              ),
+            ],
+          ),
         );
       },
     );
+  }
+
+  /// Also invoked by the in-app tour: `NewRistekBotNavBar` assigns its `onTap`
+  /// to the global `navbarController`, which the showcase flow calls to move
+  /// between tabs. Routing every change through [mainTabRM] keeps the tour,
+  /// manual taps and deep links on a single code path.
+  void _onTabTapped(int index) {
+    switch (index) {
+      case MainTab.matkul:
+        MixpanelService.track('open_courses');
+      case MainTab.tanyaTeman:
+        MixpanelService.track('open_askfriends');
+      case MainTab.kalkulator:
+        MixpanelService.track('open_calculator');
+      case MainTab.profil:
+        MixpanelService.track('open_profile');
+    }
+    mainTabRM.state = index;
   }
 
   DateTime? preBackPress;

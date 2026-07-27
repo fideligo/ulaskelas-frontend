@@ -36,6 +36,7 @@ import 'package:ulaskelas/features/tanyateman/presentation/states/_states.dart';
 import 'package:ulaskelas/main_page.dart';
 import 'package:ulaskelas/onboarding_page.dart';
 import 'package:ulaskelas/services/_services.dart';
+import 'package:ulaskelas/services/notification/_notification.dart';
 import 'package:universal_html/html.dart';
 
 import '../../utils/util.dart';
