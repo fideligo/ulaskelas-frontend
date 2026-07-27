@@ -53,7 +53,7 @@ class CardTargetGrade extends StatelessWidget {
               _buildCurrentScore(),
             ],
           ),
-          const HeightSpace(6),
+          const HeightSpace(1),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -70,7 +70,7 @@ class CardTargetGrade extends StatelessWidget {
               ),
             ],
           ),
-          const HeightSpace(12),
+          const HeightSpace(3),
           _buildTargetPills(),
         ],
       ),
