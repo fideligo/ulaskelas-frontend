@@ -197,7 +197,6 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
             ),
           ),
         ],
-        _autoFillButton(),
       ],
     );
   }
@@ -279,7 +278,6 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
               ],
             ),
           ),
-          _autoFillButton(),
         ],
       ),
     );
@@ -345,56 +343,6 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
               'Tambah Semester',
               style: FontTheme.poppins12w600black().copyWith(
                 color: BaseColors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Not part of the redesign, but the in-app tour anchors on it and it is
-  /// still the only way to import a whole semester at once.
-  Widget _autoFillButton() {
-    if (semesterRM.state.availableSemestersToFill.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: ShowcaseWrapper(
-        showcaseKey: inAppTourKeys.autoFillGC,
-        targetPadding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        targetBorderRadius: BorderRadius.circular(10),
-        onTargetClick: () {
-          ShowCaseWidget.of(calculatorContext!).dismiss();
-          showMockAutoFillSemesterDialog(context);
-        },
-        container: autoFillGCShowcase(calculatorContext!),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GradientBorderButton(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              borderWidth: 2,
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: BaseColors.autoSystemColor,
-              ),
-              width: double.infinity,
-              borderRadius: 8,
-              text: 'Auto-Fill Semester',
-              textStyle: FontTheme.poppins14w700black(),
-              onPressed: () => showAutoFillSemesterDialog(context),
-            ),
-            const HeightSpace(5),
-            Text(
-              '*Saat ini, fitur hanya bisa digunakan oleh '
-              'mahasiswa/i Fakultas Ilmu Komputer.',
-              style: FontTheme.poppins10w400black().copyWith(
-                color: BaseColors.gray1,
-                fontSize: 8,
               ),
             ),
           ],
