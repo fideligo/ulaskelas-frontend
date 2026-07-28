@@ -188,6 +188,9 @@ class _EditComponentPageState extends BaseStateful<EditComponentPage> {
         print('Hapus Komponen');
       }
 
+      // Trigger In-App Review after successfully editing component
+      await InAppReviewService.instance.requestReview();
+
       await nav.replaceToComponentPage(
         givenSemester: widget.givenSemester,
         courseId: widget.courseId,

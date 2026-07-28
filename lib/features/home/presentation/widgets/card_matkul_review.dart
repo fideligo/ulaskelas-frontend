@@ -51,7 +51,7 @@ class CardMatkulReview extends StatelessWidget {
                         children: [
                           Text(
                             '4 SKS   Wajib   ${review.courseCode ?? '-'}',
-                            style: FontTheme.poppins12w400black(),
+                            style: FontTheme.poppins12w500black(),
                           ),
                           Text(
                             '${review.courseReviewCount} Ulasan',

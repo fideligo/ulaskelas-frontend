@@ -74,9 +74,10 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
       ErrorMessenger('Pilih semester terlebih dahulu').show(context);
       return;
     }
-    // Placeholder navigation for Manual Fill
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navigasi ke halaman Manual Fill')),
+    nav.push(
+      SearchCourseCalculator(
+        givenSemester: _selectedSemester!,
+      ),
     );
   }
 
@@ -130,38 +131,71 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
               ),
             ),
             const HeightSpace(8),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField2<String>(
+              isExpanded: true,
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                contentPadding: const EdgeInsets.only(
+                  left: 3,
+                  right: 16,
+                  top: 12,
+                  bottom: 12,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: BaseColors.gray3),
+                  borderSide:
+                      const BorderSide(color: BaseColors.gray2, width: 2),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: BaseColors.gray3),
+                  borderSide:
+                      const BorderSide(color: BaseColors.gray2, width: 2),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                  borderSide:
+                      const BorderSide(color: BaseColors.gray2, width: 2),
                 ),
                 filled: true,
                 fillColor: BaseColors.white,
               ),
-              hint: Text(
-                'Click here to choose',
-                style: FontTheme.poppins12w400black().copyWith(
-                  color: BaseColors.gray3,
+              dropdownStyleData: DropdownStyleData(
+                maxHeight: 250,
+                elevation: 0,
+                offset: const Offset(0, -4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: BaseColors.gray2, width: 2),
+                  color: BaseColors.white,
+                ),
+                scrollbarTheme: ScrollbarThemeData(
+                  radius: const Radius.circular(40),
+                  thickness: MaterialStateProperty.all(6),
+                  thumbVisibility: MaterialStateProperty.all(true),
+                  thumbColor: MaterialStateProperty.all(BaseColors.gray2),
+                  crossAxisMargin: 8,
+                  mainAxisMargin: 8,
                 ),
               ),
-              icon: Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: Theme.of(context).colorScheme.primary,
+              hint: Text(
+                'Pilih Semester',
+                style: FontTheme.poppins12w400black().copyWith(
+                  color: BaseColors.gray2,
+                  fontSize: 14,
+                ),
+              ),
+              iconStyleData: const IconStyleData(
+                icon: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: BaseColors.purpleHearth,
+                ),
+                openMenuIcon: Icon(
+                  Icons.keyboard_arrow_up_rounded,
+                  color: BaseColors.purpleHearth,
+                ),
+              ),
+              menuItemStyleData: const MenuItemStyleData(
+                height: 48,
+                padding: EdgeInsets.symmetric(horizontal: 16),
               ),
               value: _selectedSemester,
               items: _selectableSemester.map((String semester) {
@@ -169,7 +203,9 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
                   value: semester,
                   child: Text(
                     _formatSemesterDisplay(semester),
-                    style: FontTheme.poppins12w400black(),
+                    style: FontTheme.poppins12w400black().copyWith(
+                      fontSize: 14,
+                    ),
                   ),
                 );
               }).toList(),
@@ -196,9 +232,9 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF251052), Color(0xFF4C1D95)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [Color(0xFF162456), Color(0xFF5D0EC0)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(16),
         ),

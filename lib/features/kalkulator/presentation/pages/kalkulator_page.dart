@@ -29,7 +29,9 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
 
   @override
   ScaffoldAttribute buildAttribute() {
-    return ScaffoldAttribute();
+    return ScaffoldAttribute(
+      backgroundColor: BaseColors.white,
+    );
   }
 
   @override
@@ -149,6 +151,64 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
                         ),
                       ),
                     ),
+                    if (semesters.isNotEmpty)
+                      GestureDetector(
+                        onTap: () {
+                          final semester = semesters[0];
+                          nav.goToSemesterPage(
+                            givenSemester: semester.givenSemester ?? '',
+                            semesterGPA: semester.semesterGPA ?? 0.0,
+                            totalSKS: semester.totalSKS ?? 0,
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF4F0FF), // Light purple
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Semester ${semesters[0].givenSemester}',
+                                    style: FontTheme.poppins14w700black().copyWith(
+                                      color: const Color(0xFF4921B8),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'IP: -', // Hardcoded as per image design
+                                    style: FontTheme.poppins12w500black().copyWith(
+                                      color: const Color(0xFF4921B8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'See details',
+                                    style: FontTheme.poppins12w500black().copyWith(
+                                      color: const Color(0xFF4921B8),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    color: Color(0xFF4921B8),
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     Expanded(
                       child: ListView.separated(
                         padding: const EdgeInsets.all(20),

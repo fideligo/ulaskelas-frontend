@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,15 +18,18 @@ import 'package:ulaskelas/core/utils/util.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/query_calculator.dart';
 import 'package:ulaskelas/features/matkul/search/data/models/_models.dart';
 import 'package:ulaskelas/services/_services.dart';
+import 'package:ulaskelas/core/services/in_app_review_service.dart';
 import '../../../../core/utils/in_app_tour/widgets/_widgets.dart';
 import '../../../matkul/main/domain/entities/query_search_course.dart';
 import '../../../matkul/search/presentation/states/_states.dart';
 import '../../../matkul/search/presentation/widgets/_widgets.dart';
+import '../../../matkul/search/presentation/pages/_pages.dart';
 import '../../data/models/component_model.dart';
 import '../../domain/entities/query_component.dart';
 import '../../domain/entities/query_semester.dart';
 import '../states/_states.dart';
 import '../widgets/_widgets.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 part 'kalkulator_page.dart';
 part 'semester_page.dart';
@@ -34,3 +38,4 @@ part 'komponen_kalkulator_page.dart';
 part 'komponen_form_page.dart';
 part 'edit_komponen_page.dart';
 part 'add_semester_page.dart';
+part 'konfirmasi_semester_page.dart';

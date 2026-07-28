@@ -49,8 +49,10 @@ class CardCourse extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${model.sks} SKS   Wajib   ${model.code}',
-                        style: FontTheme.poppins12w400black(),
+                        model.codeDesc != model.code && model.codeDesc?.isNotEmpty == true
+                            ? '${model.sks} SKS   ${model.codeDesc}   ${model.code}'
+                            : '${model.sks} SKS   ${model.code}',
+                        style: FontTheme.poppins12w500black(),
                       ),
                       Text(
                         '${model.reviewCount} Ulasan',

@@ -87,9 +87,9 @@ class SemesterState {
     //   },
     // );
     await resp.fold((failure) {
-      ErrorMessenger('Data Semester gagal dihapus').show(ctx!);
+      ErrorMessenger('Semester ${query.givenSemester} gagal dihapus').show(ctx!);
     }, (result) async {
-      SuccessMessenger('Data Semester berhasil dihapus').show(ctx!);
+      SuccessMessenger('Semester ${query.givenSemester} berhasil dihapus').show(ctx!);
       final calcResp = await _repo.getSemesters();
       calcResp.fold((failure) => throw failure, (result) {
         final lessThanLimit = result.data.length < 10;

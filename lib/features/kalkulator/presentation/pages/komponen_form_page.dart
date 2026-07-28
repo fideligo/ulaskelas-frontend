@@ -204,6 +204,9 @@ class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
         print('success');
       }
 
+      // Trigger In-App Review after successfully saving component
+      await InAppReviewService.instance.requestReview();
+
       await nav.replaceToComponentPage(
         givenSemester: widget.givenSemester,
         courseId: widget.courseId,

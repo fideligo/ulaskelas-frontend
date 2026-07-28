@@ -10,6 +10,7 @@ class EndpointsV1 {
   static final tags = '$baseUrl/api/v1/tags';
   static final likes = '$baseUrl/api/v1/likes';
   static final course = '$baseUrl/api/v1/courses/{courseId}';
+  static final majors = '$baseUrl/api/v1/majors';
   static final leaderboard = '$baseUrl/api/v1/leaderboard';
   static final calculators = '$baseUrl/api/v1/calculator';
   static final components = '$baseUrl/api/v1/score-component';

@@ -59,6 +59,7 @@ class SearchListViewSimplified extends StatelessWidget {
               },
               onData: (data) {
                 final courses = data.courses;
+                courses.sort((a, b) => (a.name ?? '').compareTo(b.name ?? ''));
                 if (data.hasReachedMax && courses.isEmpty) {
                   return const DetailView(
                     isEmptyView: true,

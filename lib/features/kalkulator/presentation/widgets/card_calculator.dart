@@ -16,110 +16,81 @@ class CardCalculator extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 12,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: BaseColors.gray5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-            decoration: BoxDecoration(
-              color: BaseColors.white,
-              boxShadow: BoxShadowDecorator().defaultShadow(context),
-              borderRadius: BorderRadius.circular(8),
+          ],
+        ),
+        child: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png', // Dummy makara logo
+              width: 48,
+              height: 48,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 50,
-                  height: 50,
-                ),
-                const WidthSpace(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            const WidthSpace(16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    model.courseName ?? '-',
+                    style: FontTheme.poppins14w700black(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const HeightSpace(4),
+                  Row(
                     children: [
                       Text(
-                        model.courseName.toString(),
-                        style: FontTheme.poppins14w500black().copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        '${model.courseSKS ?? 0} SKS',
+                        style: FontTheme.poppins12w500black(),
                       ),
-                      const HeightSpace(4),
-                      Row(
-                        children: [
-                          Text(
-                            '${model.courseSKS} SKS \u00B7 ',
-                            style: FontTheme.poppins12w400black().copyWith(
-                              fontSize: 13,
-                              color: BaseColors.gray2,
-                            ),
-                          ),
-                          if (model.totalPercentage == 100)
-                            Text(
-                              'nilai lengkap',
-                              style: FontTheme.poppins12w400black().copyWith(
-                                fontSize: 13,
-                                color: BaseColors.success,
-                              ),
-                            )
-                          else if ((model.totalPercentage ?? 0) > 0)
-                            Row(
-                              children: [
-                                const Icon(Icons.warning_amber_rounded, size: 14, color: BaseColors.gray2),
-                                const WidthSpace(2),
-                                Text(
-                                  'Bobot ${model.totalPercentage?.toStringAsFixed(0)}%',
-                                  style: FontTheme.poppins12w400black().copyWith(
-                                    fontSize: 13,
-                                    color: BaseColors.gray2,
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            Text(
-                              'belum ada nilai',
-                              style: FontTheme.poppins12w400black().copyWith(
-                                fontSize: 13,
-                                color: BaseColors.gray2,
-                              ),
-                            ),
-                        ],
+                      if (model.courseCodeDesc != model.courseCode && model.courseCodeDesc?.isNotEmpty == true) ...[
+                        const WidthSpace(12),
+                        Text(
+                          model.courseCodeDesc!,
+                          style: FontTheme.poppins12w500black(),
+                        ),
+                      ],
+                      const WidthSpace(12),
+                      Text(
+                        model.courseCode ?? '-',
+                        style: FontTheme.poppins12w500black(),
                       ),
                     ],
                   ),
-                ),
-                const WidthSpace(12),
-                Text(
-                  (model.totalPercentage ?? 0) > 0 ? _getFinalGradeOnly(model.totalScore!) : '-',
-                  style: FontTheme.poppins14w700black().copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                    color: (model.totalPercentage == 100) ? BaseColors.success : BaseColors.gray2,
+                  const HeightSpace(4),
+                  Text(
+                    (model.totalPercentage ?? 0) > 0 
+                      ? _getFinalScoreAndGrade(model.totalScore ?? 0) 
+                      : 'Belum ada nilai',
+                    style: FontTheme.poppins12w400black().copyWith(
+                      color: BaseColors.gray2,
+                    ),
                   ),
-                ),
-                const WidthSpace(8),
-                IconButton(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 3,
-                  ),
-                  constraints: const BoxConstraints(),
-                  onPressed: () async => _deleteCard(context),
-                  icon: SvgPicture.asset(
-                    SvgIcons.trash,
-                    width: 16,
-                    height: 18,
-                  ),
-                  color: BaseColors.danger,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            IconButton(
+              onPressed: () async => _deleteCard(context),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: BaseColors.error,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

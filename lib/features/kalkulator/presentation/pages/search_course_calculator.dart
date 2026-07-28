@@ -32,6 +32,7 @@ class _SearchCourseCalculatorState
   @override
   void dispose() {
     _debounce?.cancel();
+    filterRM.setState((s) => s.reset());
     super.dispose();
   }
 
@@ -53,8 +54,35 @@ class _SearchCourseCalculatorState
 
   @override
   PreferredSizeWidget? buildAppBar(BuildContext context) {
-    return BaseAppBar(
-      label: 'Tambah Mata Kuliah',
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: BaseColors.mineShaft),
+        onPressed: () async {
+          await onBackPressed();
+          nav.pop();
+        },
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Semester ${widget.givenSemester}',
+            style: FontTheme.poppins14w700black().copyWith(
+              fontSize: 16,
+            ),
+          ),
+          const HeightSpace(2),
+          Text(
+            'Pilih mata kuliah semester ini',
+            style: FontTheme.poppins12w400black().copyWith(
+              color: BaseColors.gray2,
+            ),
+          ),
+        ],
+      ),
+      titleSpacing: 0,
     );
   }
 
@@ -74,35 +102,117 @@ class _SearchCourseCalculatorState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                ),
-                child: Text(
-                  'Pilih Mata Kuliah yang kamu cari!',
-                  style: FontTheme.poppins12w600black(),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: OnReactive(
+                      () => SearchField(
+                        hintText: 'Cari mata kuliah...',
+                        focusNode: focusNode,
+                        controller: searchCourseRM.state.controller,
+                        onClear: () {
+                          focusNode.unfocus();
+                          searchCourseRM.state.controller.clear();
+                          onQueryChanged('');
+                          searchCourseRM.notify();
+                        },
+                        onFieldSubmitted: (val) {
+                          searchCourseRM.state.addToHistory(val);
+                        },
+                        onChange: onQueryChanged,
+                      ),
+                    ),
+                  ),
+                  const WidthSpace(16),
+                  IconButton(
+                    onPressed: () async {
+                      final hasFilter = await nav.push<bool>(const FilterPage());
+                      if (hasFilter ?? false) {
+                        // Apply filter logic
+                        onQueryChanged(searchCourseRM.state.controller.text, force: true);
+                      }
+                    },
+                    icon: const Icon(
+                      Icons.filter_alt,
+                      color: Color(0xFF4921B8),
+                    ),
+                  ),
+                ],
               ),
-              OnReactive(
-                () => SearchField(
-                  hintText: 'Cari mata kuliah',
-                  focusNode: focusNode,
-                  controller: searchCourseRM.state.controller,
-                  onClear: () {
-                    focusNode.unfocus();
-                    searchCourseRM.state.controller.clear();
-                    onQueryChanged('');
-                    searchCourseRM.notify();
-                  },
-                  onFieldSubmitted: (val) {
-                    searchCourseRM.state.addToHistory(val);
-                  },
-                  onChange: onQueryChanged,
-                ),
-              ),
+              const HeightSpace(16),
+              // Selected Matkul Pills
+              OnReactive(() {
+                final selectedCourses = searchCourseRM.state.selectedCourses;
+                if (selectedCourses.isEmpty) return const SizedBox.shrink();
+                
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: selectedCourses.map((course) {
+                      return Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: const Color(0xFF4921B8)),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              course.shortName ?? course.name ?? '-',
+                              style: FontTheme.poppins12w600black().copyWith(
+                                color: const Color(0xFF4921B8),
+                              ),
+                            ),
+                            const WidthSpace(8),
+                            InkWell(
+                              onTap: () {
+                                searchCourseRM.state.removeCourse(course);
+                              },
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Color(0xFF4921B8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              }),
             ],
           ),
         ),
+        
+        // Hasil Pencarian Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Hasil Pencarian',
+                style: FontTheme.poppins16w700black().copyWith(
+                  fontSize: 18,
+                ),
+              ),
+              OnReactive(() {
+                final selectedCount = searchCourseRM.state.selectedCourses.length;
+                return Text(
+                  '$selectedCount Terpilih',
+                  style: FontTheme.poppins14w700black().copyWith(
+                    color: const Color(0xFF4921B8),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+
         Expanded(
           child: OnReactive(
             () {
@@ -120,22 +230,48 @@ class _SearchCourseCalculatorState
             },
           ),
         ),
-        SimpanButton(
-          text: 'Tambahkan',
-          onTap: () {
-            if (searchCourseRM.state.selectedCourses.isEmpty) {
-              ErrorMessenger('Pilih minimal satu mata kuliah').show(context);
-              return;
-            }
-            final selectedCourses =
-                List<CourseModel>.from(searchCourseRM.state.selectedCourses);
-            calculatorRM.state.postCalculator(
-              selectedCourses,
-              widget.givenSemester,
-            );
-            searchCourseRM.state.clearSelectedCourses();
-            nav.pop();
-          },
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+              backgroundColor: const Color(0xFF4921B8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              if (searchCourseRM.state.selectedCourses.isEmpty) {
+                ErrorMessenger('Pilih minimal satu mata kuliah').show(context);
+                return;
+              }
+              final selectedCourses =
+                  List<CourseModel>.from(searchCourseRM.state.selectedCourses);
+              
+              nav.push(
+                KonfirmasiSemesterPage(
+                  givenSemester: widget.givenSemester,
+                  selectedCourses: selectedCourses,
+                ),
+              );
+            },
+            child: Text(
+              'Lanjut Review',
+              style: FontTheme.poppins14w700black().copyWith(
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -177,8 +313,8 @@ class _SearchCourseCalculatorState
   }
 
   /// Every Query changed do debouncing and rebuild.
-  Future<void> onQueryChanged(String val) async {
-    if (val == searchCourseRM.state.lastQuery) {
+  Future<void> onQueryChanged(String val, {bool force = false}) async {
+    if (val == searchCourseRM.state.lastQuery && !force) {
       return;
     }
     searchCourseRM.state.lastQuery = val;

@@ -30,8 +30,12 @@ class QuerySearchCourse extends QuerySearch {
       data['term'] = filterRM.state.selectedSemester.join(',');
     }
     if (filterRM.state.selectedType.isNotEmpty) {
-      data['code_desc'] = filterRM.state.selectedType.join(',');
+      data['course_type'] = filterRM.state.selectedType.join(',');
     }
+    if (filterRM.state.selectedJurusan != null) {
+      data['major'] = filterRM.state.selectedJurusan!;
+    }
+
     return Uri(queryParameters: data).query;
   }
 }

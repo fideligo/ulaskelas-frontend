@@ -27,7 +27,9 @@ class DeleteDialog extends StatelessWidget {
       title: Text(
         title ?? 'Penghapusan',
         textAlign: TextAlign.center,
-        style: FontTheme.poppins16w700black(),
+        style: FontTheme.poppins16w700black().copyWith(
+          fontSize: 20,
+        ),
       ),
       contentPadding: const EdgeInsets.only(
         left: 24,
@@ -38,7 +40,7 @@ class DeleteDialog extends StatelessWidget {
       content: Text(
         content ?? 'Apakah kamu yakin ingin menghapus data ini?',
         textAlign: TextAlign.center,
-        style: FontTheme.poppins14w400black(),
+        style: FontTheme.poppins14w500black(),
       ),
       actionsAlignment: MainAxisAlignment.spaceBetween,
       actionsPadding: const EdgeInsets.only(
