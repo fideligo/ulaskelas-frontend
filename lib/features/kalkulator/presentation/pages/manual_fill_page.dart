@@ -309,9 +309,7 @@ class _ManualFillPageState extends BaseStateful<ManualFillPage> {
   void _goToReview() {
     nav.goToConfirmSemesterPage(
       givenSemester: widget.givenSemester,
-      courses: manualFillRM.state.selectedCourses
-          .map(SiakCourseModel.fromCourse)
-          .toList(),
+      courses: manualFillRM.state.selectedCourses,
     );
   }
 }

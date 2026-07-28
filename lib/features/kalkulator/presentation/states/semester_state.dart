@@ -135,22 +135,12 @@ class SemesterState implements FutureState<SemesterState, void> {
   }) async {
     final resp = await _repo.deleteSemester(query);
     await resp.fold((failure) {
-      ErrorMessenger('Semester ${query.givenSemester} gagal dihapus').show(ctx!);
+      ErrorMessenger('Semester ${query.givenSemester} gagal dihapus')
+          .show(ctx!);
     }, (result) async {
-<<<<<<< HEAD
-      SuccessMessenger('Semester ${query.givenSemester} berhasil dihapus').show(ctx!);
-      final calcResp = await _repo.getSemesters();
-      calcResp.fold((failure) => throw failure, (result) {
-        final lessThanLimit = result.data.length < 10;
-        hasReachedMax = result.data.isEmpty || lessThanLimit;
-        _semesters = result.data;
-        print(_semesters);
-      });
-=======
       SuccessMessenger('Data Semester berhasil dihapus').show(ctx!);
       await _fetchSemesters();
       await _loadActiveSemesterCourses();
->>>>>>> 99ee5f7ef868c5e0a4a3216e9eb39269fa9267fe
     });
     semesterRM.notify();
   }

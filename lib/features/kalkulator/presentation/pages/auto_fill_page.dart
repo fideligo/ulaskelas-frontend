@@ -209,7 +209,14 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
   void _goToReview() {
     nav.goToConfirmSemesterPage(
       givenSemester: widget.givenSemester,
-      courses: autoFillRM.state.selectedCourses,
+      courses: autoFillRM.state.selectedCourses
+          .map((c) => CourseModel(
+                code: c.code,
+                name: c.name,
+                sks: c.sks,
+                codeDesc: c.type,
+              ))
+          .toList(),
     );
   }
 }

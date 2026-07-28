@@ -23,16 +23,13 @@ import '../../../../core/utils/in_app_tour/widgets/_widgets.dart';
 import '../../../matkul/main/domain/entities/query_search_course.dart';
 import '../../../matkul/search/presentation/states/_states.dart';
 import '../../../matkul/search/presentation/widgets/_widgets.dart';
-<<<<<<< HEAD
 import '../../../matkul/search/presentation/pages/_pages.dart';
 import '../../data/models/component_model.dart';
-=======
 import '../../data/models/calculator_model.dart';
 import '../../data/models/semester_model.dart';
 import '../../data/models/siak_course_model.dart';
 import '../../domain/entities/component_breakdown.dart';
 import '../../domain/entities/grade_target.dart';
->>>>>>> 99ee5f7ef868c5e0a4a3216e9eb39269fa9267fe
 import '../../domain/entities/query_component.dart';
 import '../../domain/entities/query_semester.dart';
 import '../../domain/entities/semester_display.dart';
@@ -43,12 +40,10 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 part 'kalkulator_page.dart';
 part 'add_semester_page.dart';
 part 'auto_fill_page.dart';
-part 'confirm_semester_page.dart';
+part 'konfirmasi_semester_page.dart';
 part 'manual_fill_page.dart';
 part 'semester_page.dart';
 part 'search_course_calculator.dart';
 part 'komponen_kalkulator_page.dart';
 part 'komponen_form_page.dart';
 part 'edit_komponen_page.dart';
-part 'add_semester_page.dart';
-part 'konfirmasi_semester_page.dart';

@@ -241,12 +241,12 @@ class NavigationServiceState implements Navigation {
 
   Future<void> goToConfirmSemesterPage({
     required String givenSemester,
-    required List<SiakCourseModel> courses,
+    required List<CourseModel> courses,
   }) {
     return nav.push<void>(
-      ConfirmSemesterPage(
+      KonfirmasiSemesterPage(
         givenSemester: givenSemester,
-        courses: courses,
+        selectedCourses: courses,
       ),
       RouteName.confirmSemesterPage,
     );

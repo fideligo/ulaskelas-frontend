@@ -223,8 +223,8 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
         children: [
           Image.asset(
             'assets/images/logo.png', // Dummy makara logo
-            width: 48,
-            height: 48,
+            width: 50,
+            height: 50,
           ),
           const WidthSpace(16),
           Expanded(
@@ -241,20 +241,10 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
                 Row(
                   children: [
                     Text(
-                      '${course.sks ?? 0} SKS',
-                      style: FontTheme.poppins12w400black(),
-                    ),
-                    if (course.codeDesc != course.code && course.codeDesc?.isNotEmpty == true) ...[
-                      const WidthSpace(12),
-                      Text(
-                        course.codeDesc!,
-                        style: FontTheme.poppins12w400black(),
-                      ),
-                    ],
-                    const WidthSpace(12),
-                    Text(
-                      course.code ?? '-',
-                      style: FontTheme.poppins12w400black(),
+                      course.codeDesc != course.code && course.codeDesc?.isNotEmpty == true
+                          ? '${course.sks ?? 0} SKS   ${course.codeDesc}   ${course.code ?? '-'}'
+                          : '${course.sks ?? 0} SKS   ${course.code ?? '-'}',
+                      style: FontTheme.poppins12w500black(),
                     ),
                   ],
                 ),
