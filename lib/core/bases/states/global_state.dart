@@ -75,8 +75,25 @@ final calculatorRM = RM.inject(
   CalculatorState.new,
 );
 
+final addSemesterRM = RM.inject(
+  AddSemesterState.new,
+);
+
+final autoFillRM = RM.inject(
+  AutoFillState.new,
+);
+
+final manualFillRM = RM.inject(
+  ManualFillState.new,
+  autoDisposeWhenNotUsed: false,
+);
+
 final componentRM = RM.inject(
   ComponentState.new,
+);
+
+final calculatorComponentRM = RM.inject(
+  CalculatorComponentState.new,
 );
 
 final componentFormRM = RM.inject(
@@ -126,6 +143,9 @@ class GlobalState {
       Inject(SearchTagState.new),
       Inject(BookmarkState.new),
       Inject(CalculatorState.new),
+      Inject(AddSemesterState.new),
+      Inject(AutoFillState.new),
+      Inject(ManualFillState.new),
       Inject(SemesterState.new),
       Inject(QuestionState.new),
       Inject(SearchQuestionState.new),
@@ -145,6 +165,9 @@ class GlobalState {
     Inject(SearchTagState.new),
     Inject(BookmarkState.new),
     Inject(CalculatorState.new),
+    Inject(AddSemesterState.new),
+    Inject(AutoFillState.new),
+    Inject(ManualFillState.new),
     Inject(SemesterState.new),
     Inject(QuestionState.new),
     Inject(SearchQuestionState.new),

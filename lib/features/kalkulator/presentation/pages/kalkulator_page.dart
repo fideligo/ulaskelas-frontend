@@ -10,8 +10,6 @@ class CalculatorPage extends StatefulWidget {
 }
 
 class _CalculatorPageState extends BaseStateful<CalculatorPage> {
-  final userGen = int.parse(profileRM.state.profile.generation!);
-
   @override
   void init() {
     StateInitializer(
@@ -38,9 +36,10 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
   PreferredSizeWidget? buildAppBar(BuildContext context) {
     return BaseAppBar(
       hasLeading: false,
-      label: 'Kalkulator Nilai Mata Kuliah',
+      label: 'Kalkulator',
       centerTitle: false,
       elevation: 0,
+      style: FontTheme.poppins20w700black(),
     );
   }
 
@@ -60,58 +59,12 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
               listenTo: semesterRM,
               onIdle: WaitingView.new,
               onWaiting: WaitingView.new,
-              onError: (dynamic error, refresh) => const Text('error'),
+              onError: (dynamic error, refresh) => _buildError(),
               onData: (data) {
-                final semesters = data.semesters;
-                if (semesters.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          HeightSpace(sizeInfo.screenSize.height * .05),
-                          Image.asset(
-                            Ilustration.login,
-                            width: sizeInfo.screenSize.width * .50,
-                          ),
-                          const HeightSpace(20),
-                          ShowcaseWrapper(
-                            showcaseKey: inAppTourKeys.emptySemesterGC,
-                            tooltipPosition: TooltipPosition.bottom,
-                            targetPadding:
-                                const EdgeInsets.fromLTRB(10, 10, 10, 0),
-                            targetBorderRadius: BorderRadius.circular(8),
-                            container: emptyCalcGCShowcase(context),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Belum Ada Semester yang Tersimpan',
-                                  style:
-                                      FontTheme.poppins14w700black().copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                                const HeightSpace(10),
-                                Text(
-                                  'Tambahkan komponen semester baru untuk '
-                                  'mulai menghitung nilai kamu!',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  textAlign: TextAlign.center,
-                                ),
-                                const HeightSpace(20),
-                                _addSemesterButton(1),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                if (data.semesters.isEmpty) {
+                  return _buildEmptyState(context, sizeInfo);
                 }
+<<<<<<< HEAD
                 semesters.sort(
                   (a, b) =>
                       _semesterPendekValueChanger(a.givenSemester!, userGen)
@@ -291,6 +244,9 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
                     ),
                   ],
                 );
+=======
+                return _buildDashboard(context, data);
+>>>>>>> 99ee5f7ef868c5e0a4a3216e9eb39269fa9267fe
               },
             ),
           ),
@@ -312,8 +268,6 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
     return true;
   }
 
-  void onScroll() {}
-
   Future<void> retrieveData() async {
     await semesterRM.setState((s) => s.retrieveData());
     if (semesterRM.state.autoFillSemesters.isEmpty) {
@@ -321,15 +275,10 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
     }
   }
 
-  bool scrollCondition() {
-    throw UnimplementedError();
-  }
-
   Future<void> showAutoFillSemesterDialog(BuildContext context) async {
     final availableSemesters = semesterRM.state.availableSemestersToFill;
     await showDialog(
       context: context,
-      // barrierColor: Colors.transparent,
       builder: (BuildContext context) {
         return AutoFillSemesterDialog(
           availableSemesters: availableSemesters,
@@ -338,24 +287,105 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
     );
   }
 
-  Future<void> showAddSemesterDialog(BuildContext context) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AddSemesterDialog(
-          userGen: int.parse(profileRM.state.profile.generation!),
-          semesters: semesterRM.state.semesters,
-          onPressed: (selectedSemester) {
-            nav.pop();
-            semesterRM.setState(
-              (s) => s.postSemester(selectedSemester),
-            );
-          },
-        );
-      },
+  /// Refresh on the way back so a semester added there shows up here.
+  Future<void> openAddSemesterPage() async {
+    await nav.goToAddSemesterPage();
+    await retrieveData();
+  }
+
+  Widget _buildDashboard(BuildContext context, SemesterState data) {
+    final activeSemester = data.activeSemester;
+
+    // The in-app tour walks the user back here from the navbar, so it needs to
+    // know which semester the card on screen opens.
+    if (activeSemester != null) {
+      targetSemester = {
+        'givenSemester': activeSemester.givenSemester,
+        'semesterGPA': activeSemester.semesterGPA,
+        'totalSKS': activeSemester.totalSKS,
+      };
+      openSemesterPage = () => _openSemester(activeSemester);
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        ShowcaseWrapper(
+          showcaseKey: inAppTourKeys.filledSemesterGC,
+          targetPadding: const EdgeInsets.all(10),
+          targetBorderRadius: BorderRadius.circular(16),
+          container: filledCalcGCShowcase(context),
+          child: CardGpaSummary(
+            gpa: data.cumulativeGPADisplay,
+            badge: data.activeSemesterBadge,
+            isHidden: data.isGpaHidden,
+            onToggleVisibility: () => semesterRM.state.toggleGpaVisibility(),
+          ),
+        ),
+        const HeightSpace(24),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Semester Aktif',
+                style: FontTheme.poppins14w700black(),
+              ),
+            ),
+            const WidthSpace(12),
+            ShowcaseWrapper(
+              showcaseKey: inAppTourKeys.emptySemesterGC,
+              tooltipPosition: TooltipPosition.bottom,
+              targetPadding: const EdgeInsets.all(8),
+              targetBorderRadius: BorderRadius.circular(10),
+              container: emptyCalcGCShowcase(context),
+              child: _addSemesterButton(),
+            ),
+          ],
+        ),
+        const HeightSpace(14),
+        if (activeSemester == null)
+          _buildHint('Belum ada semester aktif.')
+        else ...[
+          ShowcaseWrapper(
+            showcaseKey: inAppTourKeys.semesterCardGC,
+            targetPadding: const EdgeInsets.all(10),
+            targetBorderRadius: BorderRadius.circular(12),
+            onTargetClick: () async {
+              ShowCaseWidget.of(context).dismiss();
+              await _openSemester(activeSemester);
+            },
+            container: semesterCardGCShowcase(context, activeSemester),
+            child: CardActiveSemester(
+              model: activeSemester,
+              onTap: () => _openSemester(activeSemester),
+            ),
+          ),
+          const HeightSpace(10),
+          ..._buildActiveCourses(data, activeSemester),
+        ],
+        if (data.pastSemesters.isNotEmpty) ...[
+          const HeightSpace(14),
+          Text(
+            'Semester Lalu',
+            style: FontTheme.poppins14w700black(),
+          ),
+          const HeightSpace(14),
+          ...data.pastSemesters.map(
+            (semester) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: CardPastSemester(
+                model: semester,
+                onTap: () => _openSemester(semester),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
+<<<<<<< HEAD
   Widget _addSemesterButton(int givenSemester) {
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -380,16 +410,175 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
               )
             },
           ),
+=======
+  List<Widget> _buildActiveCourses(
+    SemesterState data,
+    SemesterModel activeSemester,
+  ) {
+    if (data.activeCourses.isEmpty) {
+      return [
+        _buildHint(
+          'Belum ada mata kuliah di semester ini. '
+          'Tambahkan untuk mulai menghitung nilai kamu!',
+          onTap: () => nav.goToSearchCourseCalculatorPage(
+            activeSemester.givenSemester!,
+          ),
+        ),
+      ];
+    }
+
+    return data.activeCourses
+        .map(
+          (course) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: CardActiveCourse(
+              model: course,
+              status: data.statusOf(course),
+              onTap: () => _openCourse(activeSemester, course),
+            ),
+          ),
+        )
+        .toList();
+  }
+
+  Widget _buildEmptyState(BuildContext context, SizingInformation sizeInfo) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          HeightSpace(sizeInfo.screenSize.height * .05),
+          Image.asset(
+            Ilustration.login,
+            width: sizeInfo.screenSize.width * .50,
+          ),
+          const HeightSpace(20),
+          ShowcaseWrapper(
+            showcaseKey: inAppTourKeys.emptySemesterGC,
+            tooltipPosition: TooltipPosition.bottom,
+            targetPadding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+            targetBorderRadius: BorderRadius.circular(8),
+            container: emptyCalcGCShowcase(context),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Belum Ada Semester yang Tersimpan',
+                  style: FontTheme.poppins14w700black().copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const HeightSpace(10),
+                Text(
+                  'Tambahkan komponen semester baru untuk '
+                  'mulai menghitung nilai kamu!',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+                const HeightSpace(20),
+                PrimaryButton(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  borderRadius: BorderRadius.circular(8),
+                  width: double.infinity,
+                  text: 'Tambah Semester',
+                  backgroundColor: BaseColors.purpleHearth,
+                  onPressed: openAddSemesterPage,
+                ),
+              ],
+            ),
+          ),
+>>>>>>> 99ee5f7ef868c5e0a4a3216e9eb39269fa9267fe
         ],
       ),
     );
   }
 
-  String _semesterPendekValueChanger(String semester, int userGen) {
-    if (semester.contains('sp')) {
-      final val = int.tryParse(semester.split('_').last) ?? userGen + 1;
-      return ((val - userGen) * 2 + 0.5).toString();
-    }
-    return semester;
+  Widget _buildError() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const HeightSpace(60),
+        Text(
+          'Gagal memuat data kalkulator.\nTarik ke bawah untuk mencoba lagi.',
+          style: FontTheme.poppins12w400black().copyWith(
+            color: BaseColors.gray2,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHint(String message, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        decoration: BoxDecoration(
+          color: BaseColors.gray5,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          message,
+          style: FontTheme.poppins12w400black().copyWith(
+            color: BaseColors.gray2,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _addSemesterButton() {
+    return GestureDetector(
+      onTap: openAddSemesterPage,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: BaseColors.purpleHearth,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.add_box_outlined,
+              size: 15,
+              color: BaseColors.white,
+            ),
+            const WidthSpace(7),
+            Text(
+              'Tambah Semester',
+              style: FontTheme.poppins12w600black().copyWith(
+                color: BaseColors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSemester(SemesterModel semester) {
+    return nav.goToSemesterPage(
+      givenSemester: semester.givenSemester!,
+      semesterGPA: semester.semesterGPA ?? 0,
+      totalSKS: semester.totalSKS ?? 0,
+    );
+  }
+
+  Future<void> _openCourse(SemesterModel semester, CalculatorModel course) {
+    return nav.goToComponentCalculatorPage(
+      givenSemester: semester.givenSemester!,
+      calculatorId: course.id!,
+      courseId: course.courseId!,
+      courseName: course.courseName ?? '-',
+      totalScore: course.totalScore ?? 0,
+      totalPercentage: course.totalPercentage ?? 0,
+      courseSKS: course.courseSKS ?? 0,
+    );
   }
 }

@@ -15,6 +15,13 @@ class ComponentRepositoryImpl extends ComponentRepository {
   }
 
   @override
+  Future<Decide<Failure, Parsed<Map<String, dynamic>>>> getComponentSummary(
+    int calculatorId,
+  ) {
+    return apiCall(_remoteDataSource.getComponentSummary(calculatorId));
+  }
+
+  @override
   Future<Decide<Failure, Parsed<Map<String, dynamic>>>> getDetailComponent(
     QueryComponent q,
   ) {

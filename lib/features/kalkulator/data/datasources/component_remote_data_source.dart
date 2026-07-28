@@ -3,6 +3,8 @@ part of '_datasources.dart';
 abstract class ComponentRemoteDataSource {
   Future<Parsed<Map<String, dynamic>>> getAllComponent(QueryComponent q);
 
+  Future<Parsed<Map<String, dynamic>>> getComponentSummary(int calculatorId);
+
   Future<Parsed<Map<String, dynamic>>> getDetailComponent(QueryComponent q);
 
   Future<Parsed<ComponentModel>> createComponent(Map<String, dynamic> model);
@@ -40,6 +42,38 @@ class ComponentRemoteDataSourceImpl extends ComponentRemoteDataSource {
     };
 
     return resp.parse(result);
+  }
+
+  /// Just the numbers the course list badge needs: how much weight the rubric
+  /// covers and how many components already have a score.
+  ///
+  /// Deliberately not [getAllComponent] — that one refetches with a lowered
+  /// target score to drive the recommendation box, which is wasted work here.
+  @override
+  Future<Parsed<Map<String, dynamic>>> getComponentSummary(
+    int calculatorId,
+  ) async {
+    final url = '${EndpointsRevamp.components}?calculator_id=$calculatorId';
+    final resp = await getIt(url);
+
+    final components = <ComponentModel>[];
+    for (final data in resp.dataBodyIterable['score_component']) {
+      components.add(ComponentModel.fromJson(data));
+    }
+
+    final summary = {
+      'total_weight': components.fold<double>(
+        0,
+        (total, e) => total + (e.weight ?? 0),
+      ),
+      // The API marks an empty score as -1 rather than null.
+      'filled': components
+          .where((e) => e.score != null && e.score != -1)
+          .length,
+      'total': components.length,
+    };
+
+    return resp.parse(summary);
   }
 
   @override
