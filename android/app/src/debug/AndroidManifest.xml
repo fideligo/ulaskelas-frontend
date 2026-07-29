@@ -4,4 +4,18 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Debug-only, and deliberately kept out of src/main so production never
+         ships an exact-alarm permission it has no use for: production reminders
+         are delivered by the FCM scheduler, not by local AlarmManager.
+
+         Only the DevNotificationSimulator needs these, to stand in for the cron
+         jobs during QA. Both are declared because the two cover different API
+         levels: SCHEDULE_EXACT_ALARM is auto-granted on API 31-32 but denied by
+         default from Android 14 (API 34) onward, while USE_EXACT_ALARM is
+         auto-granted with no user prompt but requires targetSdk 33+ (we are on
+         35). USE_EXACT_ALARM is subject to Play Store audit, which is exactly
+         why it must stay confined to debug builds. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 </manifest>

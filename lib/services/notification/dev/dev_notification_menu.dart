@@ -112,7 +112,7 @@ class _DevNotificationMenuState extends State<_DevNotificationMenu> {
                 _button('Kalkulator', () => _fire(_calculatorPayload)),
                 _button('Course Review', () => _fire(_courseReviewPayload)),
               ]),
-              _section('Layer 3 — scheduled +15s (kill the app to test)'),
+              _section('Layer 3 — scheduled +15s (swipe from recents to test)'),
               _row([
                 _button('Kalkulator', () => _schedule(_calculatorPayload)),
                 _button('Course Review', () => _schedule(_courseReviewPayload)),
@@ -125,6 +125,10 @@ class _DevNotificationMenuState extends State<_DevNotificationMenu> {
               _row([
                 _button('Print FCM token', _printToken),
                 _button('Permission status', _permissionStatus),
+              ]),
+              _row([
+                _button('Request permission', _requestPermission),
+                _button('Print notif state', _printNotifState),
               ]),
               _row([
                 _button('Clear tray + badge', _clearAll),
@@ -176,14 +180,36 @@ class _DevNotificationMenuState extends State<_DevNotificationMenu> {
     await DevNotificationSimulator.route(payload);
   }
 
-  Future<void> _fire(NotificationPayload payload) async {
-    await DevNotificationSimulator.fire(payload);
-    _toast('Dikirim ke tray. Tap untuk menguji deep link.');
+  Future<void> _fire(NotificationPayload payload) {
+    return _run(
+      () => DevNotificationSimulator.fire(payload),
+      'Dikirim ke tray. Tap untuk menguji deep link.',
+    );
   }
 
-  Future<void> _schedule(NotificationPayload payload) async {
-    await DevNotificationSimulator.schedule(payload);
-    _toast('Terjadwal +15 detik. Tutup paksa app untuk uji terminated.');
+  Future<void> _schedule(NotificationPayload payload) {
+    return _run(
+      () => DevNotificationSimulator.schedule(payload),
+      'Terjadwal +15 detik. Geser dari recents untuk uji terminated.',
+    );
+  }
+
+  /// Both layers fail for reasons that produce no console output of their own:
+  /// a missing permission raised from native alarm setup, or a post the system
+  /// drops after accepting it. Letting either escape `onPressed` would leave
+  /// the button looking like it succeeded, which is the exact failure mode
+  /// these layers exist to catch, so every outcome is reported twice.
+  Future<void> _run(Future<void> Function() action, String success) async {
+    try {
+      await action();
+    } catch (e, s) {
+      print('[DEV SIM] failed: $e');
+      print(s);
+      if (!mounted) return;
+      ErrorMessenger('$e').show(context);
+      return;
+    }
+    _toast(success);
   }
 
   Future<void> _incrementBadge() async {
@@ -218,6 +244,24 @@ class _DevNotificationMenuState extends State<_DevNotificationMenu> {
   Future<void> _permissionStatus() async {
     final granted = await NotificationPermission.isGranted();
     _toast(granted ? 'Izin: granted' : 'Izin: denied / belum diminta');
+  }
+
+  /// [NotificationPermission.requestIfNeeded] fires at most once per install,
+  /// so a tester who denied it on first run has no way back to the sheet. This
+  /// goes straight at POST_NOTIFICATIONS, skipping that latch.
+  Future<void> _requestPermission() async {
+    final granted = await DevNotificationSimulator.requestPermission();
+    _toast(
+      granted
+          ? 'Izin diberikan. Layer 2 dan 3 sekarang bisa tampil.'
+          : 'Masih ditolak. Android hanya menampilkan sheet dua kali; '
+              'aktifkan lewat Settings > Apps > TemanKuliah > Notifications.',
+    );
+  }
+
+  Future<void> _printNotifState() async {
+    final state = await DevNotificationSimulator.describeState();
+    _toast(state);
   }
 
   void _toast(String message) {

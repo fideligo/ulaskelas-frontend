@@ -31,10 +31,22 @@ class LocalNotificationClient {
       onDidReceiveNotificationResponse: _onResponse,
     );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(NotificationChannels.highImportance);
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await android?.createNotificationChannel(
+      NotificationChannels.highImportance,
+    );
+
+    // Without POST_NOTIFICATIONS every `notify` is discarded by the system
+    // without raising anything, so the whole feature goes quiet with no trace
+    // in the log. Recording the state at startup is what makes a denial
+    // distinguishable from a bug in the transport that follows it.
+    if (await android?.areNotificationsEnabled() == false) {
+      Logger().w(
+        'LocalNotificationClient: POST_NOTIFICATIONS denied - the system will '
+        'silently drop every notification this app posts.',
+      );
+    }
   }
 
   static Future<void> show(NotificationPayload payload) async {

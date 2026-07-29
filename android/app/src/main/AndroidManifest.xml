@@ -12,11 +12,6 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
-         If your app opens https URLs
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="https" />
-        </intent>
         <!-- If your app makes calls -->
         <intent>
             <action android:name="android.intent.action.DIAL" />
@@ -75,6 +70,28 @@
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+        <!-- Required for zonedSchedule(). flutter_local_notifications 17.2.3
+             declares no receivers in its own manifest, so without this the
+             AlarmManager PendingIntent has no component to resolve against and
+             every scheduled notification is dropped silently - the alarm fires
+             into nothing and no error surfaces on the Dart side. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <!-- Re-arms scheduled alarms after a reboot, which AlarmManager does not
+             persist. Inert until RECEIVE_BOOT_COMPLETED is also declared; left
+             unpermissioned on purpose, since production reminders arrive via FCM
+             and the dev simulator does not need to survive a restart. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
         <!-- Channel used by FCM when the app is backgrounded or terminated and
              the push payload does not name one. Must match the channel created
              at runtime by flutter_local_notifications, otherwise heads-up
