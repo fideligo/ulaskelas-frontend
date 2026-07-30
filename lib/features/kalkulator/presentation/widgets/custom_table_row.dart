@@ -13,38 +13,22 @@ part of '_widgets.dart';
 //    => applies globally
 //    => can be overridden by customGradientColors & componentStyle
 
-abstract class CustomTableRowComponentProp {
-  int get flexRatio;
-  String get text;
-  bool? get isGradient;
-  TextStyle? get componentStyle;
-  List<Color>? get gradientColors;
-  TextAlign? get textAlign;
-}
-
-class CustomTableRowComponent implements CustomTableRowComponentProp {
-  @override
-  final int flexRatio;
-  @override
-  final String text;
-  @override
-  final bool? isGradient;
-  @override 
-  final TextStyle? componentStyle;
-  @override 
-  List<Color>? gradientColors;
-  @override
-  TextAlign? textAlign;
-
-
+class CustomTableRowComponent {
   CustomTableRowComponent({
-    required this.flexRatio, 
+    required this.flexRatio,
     required this.text,
     this.isGradient,
     this.componentStyle,
     this.gradientColors,
     this.textAlign,
   });
+
+  final int flexRatio;
+  final String text;
+  final bool? isGradient;
+  final TextStyle? componentStyle;
+  List<Color>? gradientColors;
+  TextAlign? textAlign;
 }
 
 class CustomTableRow extends StatelessWidget {
@@ -70,29 +54,30 @@ class CustomTableRow extends StatelessWidget {
               flex: component.flexRatio,
               // ignore: use_if_null_to_convert_nulls_to_bools
               child: component.isGradient == true
-                ? GradientText(
-                    component.text, 
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: component.gradientColors 
-                                ?? BaseColors.autoSystemColor,
+                  ? GradientText(
+                      component.text,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: component.gradientColors ??
+                            BaseColors.autoSystemColor,
+                      ),
+                      style: style ?? FontTheme.poppins12w600black(),
+                      textAlign: index == components.length - 1 &&
+                              component.textAlign != null
+                          ? component.textAlign
+                          : null,
+                    )
+                  : Text(
+                      component.text,
+                      style: component.componentStyle ??
+                          style ??
+                          FontTheme.poppins12w600black(),
+                      textAlign: index == components.length - 1 &&
+                              component.textAlign != null
+                          ? component.textAlign
+                          : null,
                     ),
-                    style: style ?? FontTheme.poppins12w600black(),
-                    textAlign: index == components.length - 1 
-                                && component.textAlign != null 
-                      ? component.textAlign
-                      : null,
-                  )
-                : Text(
-                    component.text,
-                    style: component.componentStyle
-                            ?? style ?? FontTheme.poppins12w600black(),
-                    textAlign: index == components.length - 1 
-                                && component.textAlign != null 
-                      ? component.textAlign
-                      : null,
-                  ),
             );
           },
         ),

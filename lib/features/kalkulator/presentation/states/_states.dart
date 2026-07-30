@@ -28,7 +28,6 @@ import '../../../matkul/search/data/models/_models.dart';
 import '../../data/models/semester_model.dart';
 import '../../domain/entities/query_semester.dart';
 
-part 'add_semester_state.dart';
 part 'auto_fill_state.dart';
 part 'calculator_component_state.dart';
 part 'calculator_state.dart';

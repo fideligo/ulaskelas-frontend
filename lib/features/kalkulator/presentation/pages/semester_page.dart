@@ -368,8 +368,7 @@ class _SemesterPageState extends BaseStateful<SemesterPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            onPressed: () =>
-                nav.goToSearchCourseCalculatorPage(widget.givenSemester!),
+            onPressed: () => nav.goToManualFillPage(widget.givenSemester!),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

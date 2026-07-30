@@ -53,8 +53,8 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
     // Then add the selected courses to it
     await calculatorRM.state.postCalculator(_courses, widget.givenSemester);
 
-    // Clear search course state so it's fresh next time
-    await searchCourseRM.setState((s) => s.clearSelectedCourses());
+    // Clear the manual-fill basket so it's fresh next time
+    manualFillRM.state.reset();
 
     // Refresh semester state so Home is updated
     await semesterRM.state.retrieveData();
@@ -257,7 +257,7 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
                 _courses.remove(course);
               });
               // Keep state in sync in case user goes back
-              searchCourseRM.setState((s) => s.selectedCourses.remove(course));
+              manualFillRM.state.unselect(course);
             },
             icon: const Icon(
               Icons.delete_outline,

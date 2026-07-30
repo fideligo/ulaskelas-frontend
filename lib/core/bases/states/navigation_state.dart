@@ -233,6 +233,7 @@ class NavigationServiceState implements Navigation {
   }
 
   Future<void> goToManualFillPage(String givenSemester) {
+    MixpanelService.track('calculator_add_course');
     return nav.push<void>(
       ManualFillPage(givenSemester: givenSemester),
       RouteName.manualFillPage,
@@ -249,14 +250,6 @@ class NavigationServiceState implements Navigation {
         selectedCourses: courses,
       ),
       RouteName.confirmSemesterPage,
-    );
-  }
-
-  Future<void> goToSearchCourseCalculatorPage(String givenSemester) {
-    MixpanelService.track('calculator_add_course');
-    return nav.push<void>(
-      SearchCourseCalculator(givenSemester: givenSemester),
-      RouteName.searchCourseCalculator,
     );
   }
 

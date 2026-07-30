@@ -63,11 +63,7 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
       ErrorMessenger('Pilih semester terlebih dahulu').show(context);
       return;
     }
-    nav.push(
-      AutoFillPage(
-        givenSemester: _selectedSemester!,
-      ),
-    );
+    nav.goToAutoFillPage(_selectedSemester!);
   }
 
   void _onManualFillPressed() {
@@ -75,11 +71,7 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
       ErrorMessenger('Pilih semester terlebih dahulu').show(context);
       return;
     }
-    nav.push(
-      SearchCourseCalculator(
-        givenSemester: _selectedSemester!,
-      ),
-    );
+    nav.goToManualFillPage(_selectedSemester!);
   }
 
   @override

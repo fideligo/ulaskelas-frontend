@@ -212,7 +212,7 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
         _buildHint(
           'Belum ada mata kuliah di semester ini. '
           'Tambahkan untuk mulai menghitung nilai kamu!',
-          onTap: () => nav.goToSearchCourseCalculatorPage(
+          onTap: () => nav.goToManualFillPage(
             activeSemester.givenSemester!,
           ),
         ),

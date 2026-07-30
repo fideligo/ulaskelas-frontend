@@ -20,6 +20,9 @@ class _ManualFillPageState extends BaseStateful<ManualFillPage> {
   @override
   void init() {
     manualFillRM.state.reset();
+    // Entering the page starts from an unfiltered catalogue, whatever the
+    // matkul search left behind in the shared filterRM.
+    filterRM.state.reset();
     _scrollController.addListener(_onScroll);
     manualFillRM.setState((s) => s.retrieveData(QuerySearchCourse()));
   }
@@ -28,6 +31,9 @@ class _ManualFillPageState extends BaseStateful<ManualFillPage> {
   void dispose() {
     _scrollController.dispose();
     _focusNode.dispose();
+    // filterRM is global and shared with the matkul search, so the picks made
+    // here must not follow the user out of this page.
+    filterRM.setState((s) => s.reset());
     super.dispose();
   }
 
@@ -143,15 +149,43 @@ class _ManualFillPageState extends BaseStateful<ManualFillPage> {
         InkWell(
           onTap: _openFilter,
           borderRadius: BorderRadius.circular(10),
-          child: const Padding(
-            padding: EdgeInsets.all(6),
-            child: Icon(
-              Icons.filter_alt,
-              size: 30,
-              color: BaseColors.purpleHearth,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: OnBuilder(
+              listenTo: filterRM,
+              builder: _buildFilterIcon,
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  /// A dot rides on the icon while any filter is on, so the shortened result
+  /// list is never mistaken for an empty catalogue.
+  Widget _buildFilterIcon() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(
+          Icons.filter_alt,
+          size: 30,
+          color: BaseColors.purpleHearth,
+        ),
+        if (filterRM.state.hasFilter)
+          Positioned(
+            right: -1,
+            top: -1,
+            child: Container(
+              height: 10,
+              width: 10,
+              decoration: BoxDecoration(
+                color: BaseColors.error,
+                shape: BoxShape.circle,
+                border: Border.all(color: BaseColors.white, width: 1.5),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -302,8 +336,19 @@ class _ManualFillPageState extends BaseStateful<ManualFillPage> {
     );
   }
 
-  void _openFilter() {
-    WarningMessenger('Filter belum tersedia').show(context);
+  /// The filter sheet writes straight into the shared [filterRM], which
+  /// [QuerySearchCourse] reads when it builds its query string — so applying
+  /// one only needs the list refetched from page 1.
+  Future<void> _openFilter() async {
+    final applied = await nav.push<bool>(const FilterPage());
+    if (!(applied ?? false)) {
+      return;
+    }
+    await manualFillRM.setState(
+      (s) => s.retrieveData(
+        QuerySearchCourse(name: manualFillRM.state.controller.text),
+      ),
+    );
   }
 
   void _goToReview() {
