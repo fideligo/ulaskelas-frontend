@@ -262,13 +262,11 @@ class _SemesterPageState extends BaseStateful<SemesterPage> {
     );
   }
 
+  int get _userGeneration =>
+      int.tryParse(profileRM.state.profile.generation ?? '') ?? 0;
+
   String _getSemesterPill() {
-    final sem = int.tryParse(widget.givenSemester ?? '0') ?? 0;
-    if (sem % 2 == 0) {
-      return 'Genap 2025/2026';
-    } else {
-      return 'Ganjil 2025/2026';
-    }
+    return academicTermLabel(widget.givenSemester ?? '0', _userGeneration);
   }
 
   Widget _buildSemesterCard(int totalCourses) {
@@ -290,7 +288,7 @@ class _SemesterPageState extends BaseStateful<SemesterPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Semester ${widget.givenSemester}',
+                semesterFullLabel(widget.givenSemester ?? '0'),
                 style: FontTheme.poppins16w700black().copyWith(
                   color: Colors.white,
                   fontSize: 18,

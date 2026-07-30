@@ -211,6 +211,7 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                               height: 36,
                               child: TextFormField(
                                 controller: _searchController,
+                                style: FontTheme.poppins12w400black(),
                                 decoration: InputDecoration(
                                   isDense: true,
                                   contentPadding: const EdgeInsets.symmetric(

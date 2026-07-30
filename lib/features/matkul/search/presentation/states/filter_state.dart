@@ -44,8 +44,12 @@ class FilterState {
 
   final matkulTypes = [
     CheckboxItem(
-      text: 'Wajib',
+      text: 'Wajib Jurusan',
       value: 'MANDATORY',
+    ),
+    CheckboxItem(
+      text: 'Wajib UI',
+      value: 'WAJIB_UI',
     ),
     CheckboxItem(
       text: 'Pilihan',

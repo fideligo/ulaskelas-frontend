@@ -68,7 +68,7 @@ class _SearchCourseCalculatorState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Semester ${widget.givenSemester}',
+            semesterFullLabel(widget.givenSemester),
             style: FontTheme.poppins14w700black().copyWith(
               fontSize: 16,
             ),

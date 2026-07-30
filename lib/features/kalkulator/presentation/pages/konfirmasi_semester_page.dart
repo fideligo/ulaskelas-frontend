@@ -27,14 +27,11 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
     return _courses.fold(0, (sum, course) => sum + (course.sks ?? 0));
   }
 
+  int get _userGeneration =>
+      int.tryParse(profileRM.state.profile.generation ?? '') ?? 0;
+
   String _getSemesterPill() {
-    // Temporary logic for Genap 2025/2026 / Ganjil 2025/2026 based on givenSemester
-    final sem = int.tryParse(widget.givenSemester) ?? 0;
-    if (sem % 2 == 0) {
-      return 'Genap 2025/2026';
-    } else {
-      return 'Ganjil 2025/2026';
-    }
+    return academicTermLabel(widget.givenSemester, _userGeneration);
   }
 
   void _onTambahMatkul() {
@@ -59,8 +56,8 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
     // Refresh semester state so Home is updated
     await semesterRM.state.retrieveData();
 
-    // Navigate back to home
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    // Navigate back to home calculator (main page)
+    nav.popUntil(RouteName.mainPage);
   }
 
   @override
@@ -148,7 +145,7 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Semester ${widget.givenSemester}',
+                semesterFullLabel(widget.givenSemester),
                 style: FontTheme.poppins16w700black().copyWith(
                   color: Colors.white,
                   fontSize: 18,

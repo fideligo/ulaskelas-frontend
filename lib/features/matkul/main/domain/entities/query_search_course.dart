@@ -30,7 +30,16 @@ class QuerySearchCourse extends QuerySearch {
       data['term'] = filterRM.state.selectedSemester.join(',');
     }
     if (filterRM.state.selectedType.isNotEmpty) {
-      data['course_type'] = filterRM.state.selectedType.join(',');
+      // If Wajib UI is selected, it means we should search for code=UIGE
+      if (filterRM.state.selectedType.contains('WAJIB_UI')) {
+        data['code'] = 'UIGE';
+      }
+      
+      // Keep only MANDATORY and ELECTIVE in course_type (exclude WAJIB_UI since we handle it via code)
+      final types = filterRM.state.selectedType.where((type) => type != 'WAJIB_UI').toList();
+      if (types.isNotEmpty) {
+        data['course_type'] = types.join(',');
+      }
     }
     if (filterRM.state.selectedJurusan != null) {
       data['major'] = filterRM.state.selectedJurusan!;
