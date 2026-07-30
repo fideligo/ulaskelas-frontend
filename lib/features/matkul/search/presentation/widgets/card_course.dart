@@ -43,17 +43,23 @@ class CardCourse extends StatelessWidget {
                     style: FontTheme.poppins14w700black().copyWith(
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const HeightSpace(4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        model.codeDesc != model.code && model.codeDesc?.isNotEmpty == true
-                            ? '${model.sks} SKS   ${model.codeDesc}   ${model.code}'
-                            : '${model.sks} SKS   ${model.code}',
-                        style: FontTheme.poppins12w500black(),
+                      Expanded(
+                        child: Text(
+                          model.codeDesc != model.code && model.codeDesc?.isNotEmpty == true
+                              ? '${model.sks} SKS   ${model.codeDesc}   ${model.code}'
+                              : '${model.sks} SKS   ${model.code}',
+                          style: FontTheme.poppins12w500black(),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
+                      const WidthSpace(8),
                       Text(
                         '${model.reviewCount} Ulasan',
                         style: FontTheme.poppins12w400black().copyWith(

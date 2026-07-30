@@ -66,21 +66,14 @@ class CardCourseSimplified extends StatelessWidget {
                   const HeightSpace(4),
                   Row(
                     children: [
-                      Text(
-                        '${model.sks ?? 0} SKS',
-                        style: FontTheme.poppins12w500black(),
-                      ),
-                      if (model.codeDesc != model.code && model.codeDesc?.isNotEmpty == true) ...[
-                        const WidthSpace(12),
-                        Text(
-                          model.codeDesc!,
+                      Expanded(
+                        child: Text(
+                          model.codeDesc != model.code && model.codeDesc?.isNotEmpty == true
+                              ? '${model.sks ?? 0} SKS   ${model.codeDesc}   ${model.code ?? '-'}'
+                              : '${model.sks ?? 0} SKS   ${model.code ?? '-'}',
                           style: FontTheme.poppins12w500black(),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                      const WidthSpace(12),
-                      Text(
-                        model.code ?? '-',
-                        style: FontTheme.poppins12w500black(),
                       ),
                     ],
                   ),
