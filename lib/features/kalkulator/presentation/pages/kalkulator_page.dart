@@ -353,16 +353,26 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
     );
   }
 
-  Future<void> _openSemester(SemesterModel semester) {
-    return nav.goToSemesterPage(
+  /// Refresh on the way back: adding a matkul or deleting the semester there
+  /// changes the GPA and course list shown here.
+  Future<void> _openSemester(SemesterModel semester) async {
+    await nav.goToSemesterPage(
       givenSemester: semester.givenSemester!,
       semesterGPA: semester.semesterGPA ?? 0,
       totalSKS: semester.totalSKS ?? 0,
     );
+    await retrieveData();
   }
 
-  Future<void> _openCourse(SemesterModel semester, CalculatorModel course) {
-    return nav.goToComponentCalculatorPage(
+  /// Refresh on the way back. The component page keeps `calculatorRM` current
+  /// for the semester page, but this page reads [SemesterState] — so without a
+  /// refetch a component added there leaves the GPA, the weight and the status
+  /// badge here stale until a manual pull-to-refresh.
+  Future<void> _openCourse(
+    SemesterModel semester,
+    CalculatorModel course,
+  ) async {
+    await nav.goToComponentCalculatorPage(
       givenSemester: semester.givenSemester!,
       calculatorId: course.id!,
       courseId: course.courseId!,
@@ -371,5 +381,6 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
       totalPercentage: course.totalPercentage ?? 0,
       courseSKS: course.courseSKS ?? 0,
     );
+    await retrieveData();
   }
 }
