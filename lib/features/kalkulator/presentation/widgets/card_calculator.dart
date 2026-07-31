@@ -75,12 +75,11 @@ class CardCalculator extends StatelessWidget {
     );
   }
 
-  /// `4 SKS   Wajib   CSGE602070`.
-  String get _details {
-    final code = model.courseCode;
-    final type = courseTypeLabel(model.courseCodeDesc, code);
-    return '${model.courseSKS ?? 0} SKS   $type   ${code ?? '-'}';
-  }
+  String get _details => courseSubtitle(
+        sks: model.courseSKS,
+        codeDesc: model.courseCodeDesc,
+        code: model.courseCode,
+      );
 
   Future<void> _deleteCard(BuildContext context) async {
     await showDialog(

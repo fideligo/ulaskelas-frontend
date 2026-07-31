@@ -50,9 +50,11 @@ class CardCourse extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${model.sks} SKS   '
-                          '${courseTypeLabel(model.codeDesc, model.code)}   '
-                          '${model.code}',
+                          courseSubtitle(
+                            sks: model.sks,
+                            codeDesc: model.codeDesc,
+                            code: model.code,
+                          ),
                           style: FontTheme.poppins12w500black(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

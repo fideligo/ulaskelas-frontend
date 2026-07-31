@@ -239,9 +239,11 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
                 ),
                 const HeightSpace(4),
                 Text(
-                  '${course.sks ?? 0} SKS   '
-                  '${courseTypeLabel(course.codeDesc, course.code)}   '
-                  '${course.code ?? '-'}',
+                  courseSubtitle(
+                    sks: course.sks,
+                    codeDesc: course.codeDesc,
+                    code: course.code,
+                  ),
                   style: FontTheme.poppins12w500black(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
