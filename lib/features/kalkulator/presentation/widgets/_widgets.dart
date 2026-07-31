@@ -36,6 +36,7 @@ part 'card_target_grade.dart';
 part 'course_checklist_card.dart';
 part 'custom_table_row.dart';
 part 'delete_dialog.dart';
+part 'faculty_logo.dart';
 part 'frequency_controller.dart';
 part 'gradient_text.dart';
 part 'info_pill.dart';

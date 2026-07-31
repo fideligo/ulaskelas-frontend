@@ -28,7 +28,7 @@ class CardActiveCourse extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _avatar(),
+            FacultyLogo(code: model.courseCode),
             const WidthSpace(14),
             Expanded(
               child: Column(
@@ -92,44 +92,5 @@ class CardActiveCourse extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// The design calls for a course logo, which neither the assets nor the
-  /// course endpoint provide — initials on a tinted tile stand in for it.
-  Widget _avatar() {
-    return Container(
-      height: 40,
-      width: 40,
-      decoration: BoxDecoration(
-        color: BaseColors.purpleHearth.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Center(
-        child: Text(
-          _initials,
-          style: FontTheme.poppins14w700black().copyWith(
-            color: BaseColors.purpleHearth,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// [CalculatorModel.shortName] is only filled in by `fromJson`, so derive it
-  /// again for locally built models.
-  String get _initials {
-    final shortName = model.shortName;
-    if (shortName != null && shortName.isNotEmpty) {
-      return shortName.toUpperCase();
-    }
-
-    final words = (model.courseName ?? '')
-        .split(' ')
-        .where((word) => word.isNotEmpty)
-        .take(2);
-    if (words.isEmpty) {
-      return '?';
-    }
-    return words.map((word) => word[0]).join().toUpperCase();
   }
 }
