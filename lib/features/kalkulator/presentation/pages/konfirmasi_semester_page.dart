@@ -206,51 +206,43 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
   Widget _buildCourseCard(CourseModel course) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: BaseColors.white,
+        boxShadow: BoxShadowDecorator().defaultShadow(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BaseColors.gray5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         children: [
-          Image.asset(
-            'assets/images/logo.png', // Dummy makara logo
-            width: 50,
-            height: 50,
-          ),
-          const WidthSpace(16),
+          FacultyLogo(code: course.code),
+          const WidthSpace(14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   course.name ?? '-',
-                  style: FontTheme.poppins14w700black(),
+                  style: FontTheme.poppins14w600black(),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const HeightSpace(4),
+                const HeightSpace(3),
                 Text(
                   courseSubtitle(
                     sks: course.sks,
                     codeDesc: course.codeDesc,
                     code: course.code,
                   ),
-                  style: FontTheme.poppins12w500black(),
+                  style: FontTheme.poppins12w400black().copyWith(
+                    color: BaseColors.gray2,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          const WidthSpace(8),
           IconButton(
             onPressed: () {
               setState(() {
