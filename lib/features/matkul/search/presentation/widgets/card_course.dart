@@ -43,6 +43,8 @@ class CardCourse extends StatelessWidget {
                     style: FontTheme.poppins14w700black().copyWith(
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const HeightSpace(4),
                   Row(

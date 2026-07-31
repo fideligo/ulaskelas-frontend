@@ -54,8 +54,12 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
     if (!semester.contains('sp')) {
       return 'Semester $semester';
     }
-    final year = semester.split('_').last;
-    return 'Semester Pendek 20$year';
+    final yearStr = semester.split('_').last;
+    final year = int.tryParse(yearStr) ?? 0;
+    if (year < 100) {
+      return 'Semester Pendek 20${year.toString().padLeft(2, '0')}';
+    }
+    return 'Semester Pendek $year';
   }
 
   void _onAutoFillPressed() {
