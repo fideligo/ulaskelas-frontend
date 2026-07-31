@@ -93,6 +93,27 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
     }
   }
 
+  /// Refetch in place, without the [WaitingView] flash.
+  ///
+  /// [retrieveData] goes through `semesterRM.setState`, which flips the state
+  /// to waiting and swaps the whole dashboard for a spinner — fine for a
+  /// pull-to-refresh the user asked for, jarring on every back navigation.
+  /// [SemesterState.retrieveData] mutates in place and ends in `notify()`, so
+  /// the page rebuilds through `onData` with the new numbers already there.
+  Future<void> _silentRefresh() async {
+    try {
+      await semesterRM.state.retrieveData();
+    } on Exception catch (_) {
+      // Bypassing setState means bypassing onError too, so the throw from the
+      // Left branch has to be caught here or it escapes as an unhandled async
+      // error. The dashboard on screen is still valid — blanking it because a
+      // background refresh failed would be worse than leaving it stale.
+      if (mounted) {
+        ErrorMessenger('Gagal memperbarui data kalkulator').show(context);
+      }
+    }
+  }
+
   Future<void> showAutoFillSemesterDialog(BuildContext context) async {
     final availableSemesters = semesterRM.state.availableSemestersToFill;
     await showDialog(
@@ -108,7 +129,7 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
   /// Refresh on the way back so a semester added there shows up here.
   Future<void> openAddSemesterPage() async {
     await nav.goToAddSemesterPage();
-    await retrieveData();
+    await _silentRefresh();
   }
 
   Widget _buildDashboard(BuildContext context, SemesterState data) {
@@ -361,7 +382,7 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
       semesterGPA: semester.semesterGPA ?? 0,
       totalSKS: semester.totalSKS ?? 0,
     );
-    await retrieveData();
+    await _silentRefresh();
   }
 
   /// Refresh on the way back. The component page keeps `calculatorRM` current
@@ -381,6 +402,6 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
       totalPercentage: course.totalPercentage ?? 0,
       courseSKS: course.courseSKS ?? 0,
     );
-    await retrieveData();
+    await _silentRefresh();
   }
 }
