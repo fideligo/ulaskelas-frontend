@@ -94,7 +94,7 @@ class CourseChecklistCard extends StatelessWidget {
   /// overflow the row on a narrow screen.
   Widget _details() {
     return Text(
-      '${sks ?? 0} SKS   ${type ?? '-'}   ${code ?? '-'}',
+      '${sks ?? 0} SKS   ${courseTypeLabel(type, code)}   ${code ?? '-'}',
       style: FontTheme.poppins12w400black().copyWith(
         color: BaseColors.gray2,
       ),

@@ -51,7 +51,7 @@ class CardCourse extends StatelessWidget {
                       Expanded(
                         child: Text(
                           '${model.sks} SKS   '
-                          '${model.codeDesc ?? 'Wajib'}   '
+                          '${courseTypeLabel(model.codeDesc, model.code)}   '
                           '${model.code}',
                           style: FontTheme.poppins12w500black(),
                           maxLines: 1,

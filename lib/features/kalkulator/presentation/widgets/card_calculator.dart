@@ -76,19 +76,10 @@ class CardCalculator extends StatelessWidget {
   }
 
   /// `4 SKS   Wajib   CSGE602070`.
-  ///
-  /// `fromJson` falls `courseCodeDesc` back to `courseCode`, so the type is
-  /// dropped when the two match rather than printing the code twice.
   String get _details {
-    final codeDesc = model.courseCodeDesc;
-    return <String>[
-      '${model.courseSKS ?? 0} SKS',
-      if (codeDesc != null &&
-          codeDesc.isNotEmpty &&
-          codeDesc != model.courseCode)
-        codeDesc,
-      if (model.courseCode?.isNotEmpty ?? false) model.courseCode!,
-    ].join('   ');
+    final code = model.courseCode;
+    final type = courseTypeLabel(model.courseCodeDesc, code);
+    return '${model.courseSKS ?? 0} SKS   $type   ${code ?? '-'}';
   }
 
   Future<void> _deleteCard(BuildContext context) async {

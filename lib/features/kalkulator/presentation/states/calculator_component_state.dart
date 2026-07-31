@@ -105,7 +105,7 @@ class CalculatorComponentState
   Future<void> loadCourseType(int courseId) async {
     final resp = await _courseRepo.getDetailCourse(courseId);
     resp.fold((failure) => null, (result) {
-      courseType = result.data.codeDesc;
+      courseType = courseTypeLabel(result.data.codeDesc, result.data.code);
     });
     calculatorComponentRM.notify();
   }

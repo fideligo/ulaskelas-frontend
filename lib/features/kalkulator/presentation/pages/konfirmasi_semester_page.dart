@@ -238,15 +238,13 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const HeightSpace(4),
-                Row(
-                  children: [
-                    Text(
-                      course.codeDesc != course.code && course.codeDesc?.isNotEmpty == true
-                          ? '${course.sks ?? 0} SKS   ${course.codeDesc}   ${course.code ?? '-'}'
-                          : '${course.sks ?? 0} SKS   ${course.code ?? '-'}',
-                      style: FontTheme.poppins12w500black(),
-                    ),
-                  ],
+                Text(
+                  '${course.sks ?? 0} SKS   '
+                  '${courseTypeLabel(course.codeDesc, course.code)}   '
+                  '${course.code ?? '-'}',
+                  style: FontTheme.poppins12w500black(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
