@@ -13,10 +13,12 @@ class FilterPage extends StatefulWidget {
 
 class _FilterPageState extends BaseStateful<FilterPage> {
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _jurusanSearchController = TextEditingController();
 
   @override
   void dispose() {
     _searchController.dispose();
+    _jurusanSearchController.dispose();
     super.dispose();
   }
 
@@ -108,9 +110,9 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                   ),
                   children: [
                     Text(
-                      'Jurusan',
+                      'Fakultas',
                       style: FontTheme.poppins14w700black().copyWith(
-                        color: BaseColors.purpleHearth, // Purple title
+                        color: BaseColors.purpleHearth,
                       ),
                     ),
                     const HeightSpace(8),
@@ -177,7 +179,7 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                           ),
                         ),
                         hint: Text(
-                          'Pilih Jurusan',
+                          'Pilih Fakultas',
                           style: FontTheme.poppins12w400black().copyWith(
                             color: BaseColors.gray2,
                             fontSize: 16,
@@ -211,13 +213,14 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                               height: 36,
                               child: TextFormField(
                                 controller: _searchController,
+                                style: FontTheme.poppins12w400black(),
                                 decoration: InputDecoration(
                                   isDense: true,
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 0,
                                   ),
-                                  hintText: 'Search',
+                                  hintText: 'Cari fakultas...',
                                   hintStyle:
                                       FontTheme.poppins12w400black().copyWith(
                                     color: BaseColors.gray2,
@@ -250,9 +253,7 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                             ),
                           ),
                           searchMatchFn: (item, searchValue) {
-                            final displayName = filterRM.state
-                                .getMajorDisplayName(item.value ?? '');
-                            return displayName
+                            return (item.value ?? '')
                                 .toLowerCase()
                                 .contains(searchValue.toLowerCase());
                           },
@@ -262,22 +263,22 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                             _searchController.clear();
                           }
                         },
-                        value: filterRM.state.tempSelectedJurusan,
+                        value: filterRM.state.tempSelectedFakultas,
                         items: [
                           DropdownMenuItem<String?>(
                             value: null,
                             child: Text(
-                              '-- Semua Jurusan --',
+                              '-- Semua Fakultas --',
                               style: FontTheme.poppins12w400black().copyWith(
                                 color: BaseColors.gray2,
                               ),
                             ),
                           ),
-                          ...filterRM.state.majorOrgCodes.map((orgCode) {
+                          ...filterRM.state.facultyList.map((faculty) {
                             return DropdownMenuItem<String?>(
-                              value: orgCode,
+                              value: faculty,
                               child: Text(
-                                filterRM.state.getMajorDisplayName(orgCode),
+                                faculty,
                                 style: FontTheme.poppins12w400black(),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -286,9 +287,202 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                         ],
                         onChanged: (String? newValue) {
                           setState(() {
-                            filterRM.state.tempSelectedJurusan = newValue;
+                            filterRM.state.tempSelectedFakultas = newValue;
+                            // Reset jurusan when fakultas changes
+                            filterRM.state.tempSelectedJurusan = null;
                           });
                         },
+                      ),
+                    const HeightSpace(16),
+                    Text(
+                      'Jurusan',
+                      style: FontTheme.poppins14w700black().copyWith(
+                        color: filterRM.state.tempSelectedFakultas != null
+                            ? BaseColors.purpleHearth
+                            : BaseColors.gray2,
+                      ),
+                    ),
+                    const HeightSpace(8),
+                    if (filterRM.state.isLoadingMajors)
+                      const SizedBox.shrink()
+                    else
+                      IgnorePointer(
+                        ignoring: filterRM.state.tempSelectedFakultas == null,
+                        child: Opacity(
+                          opacity: filterRM.state.tempSelectedFakultas == null
+                              ? 0.45
+                              : 1.0,
+                          child: DropdownButtonFormField2<String?>(
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.only(
+                                left: 3,
+                                right: 16,
+                                top: 12,
+                                bottom: 12,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                    color: BaseColors.gray2, width: 2),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                    color: BaseColors.gray2, width: 2),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                    color: BaseColors.gray2, width: 2),
+                              ),
+                              filled: true,
+                              fillColor: BaseColors.white,
+                            ),
+                            dropdownStyleData: DropdownStyleData(
+                              maxHeight: 250,
+                              elevation: 0,
+                              offset: const Offset(0, -8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: BaseColors.gray2, width: 2),
+                                color: BaseColors.white,
+                              ),
+                              scrollbarTheme: ScrollbarThemeData(
+                                radius: const Radius.circular(40),
+                                thickness: MaterialStateProperty.all(6),
+                                thumbVisibility:
+                                    MaterialStateProperty.all(true),
+                                thumbColor:
+                                    MaterialStateProperty.all(BaseColors.gray2),
+                                crossAxisMargin: 8,
+                                mainAxisMargin: 8,
+                              ),
+                            ),
+                            hint: Text(
+                              filterRM.state.tempSelectedFakultas == null
+                                  ? 'Pilih fakultas terlebih dahulu'
+                                  : 'Pilih Jurusan',
+                              style: FontTheme.poppins12w400black().copyWith(
+                                color: BaseColors.gray2,
+                                fontSize: 16,
+                              ),
+                            ),
+                            iconStyleData: const IconStyleData(
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: BaseColors.purpleHearth,
+                              ),
+                              openMenuIcon: Icon(
+                                Icons.keyboard_arrow_up_rounded,
+                                color: BaseColors.purpleHearth,
+                              ),
+                            ),
+                            menuItemStyleData: const MenuItemStyleData(
+                              height: 48,
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                            dropdownSearchData: DropdownSearchData(
+                              searchController: _jurusanSearchController,
+                              searchInnerWidgetHeight: 52,
+                              searchInnerWidget: Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 12,
+                                  bottom: 8,
+                                  right: 12,
+                                  left: 12,
+                                ),
+                                child: SizedBox(
+                                  height: 36,
+                                  child: TextFormField(
+                                    controller: _jurusanSearchController,
+                                    style: FontTheme.poppins12w400black(),
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 0,
+                                      ),
+                                      hintText: 'Cari jurusan...',
+                                      hintStyle: FontTheme.poppins12w400black()
+                                          .copyWith(
+                                        color: BaseColors.gray2,
+                                      ),
+                                      suffixIcon: const Icon(
+                                        Icons.search,
+                                        color: BaseColors.gray2,
+                                        size: 18,
+                                      ),
+                                      suffixIconConstraints:
+                                          const BoxConstraints(
+                                        minHeight: 36,
+                                        minWidth: 36,
+                                      ),
+                                      filled: true,
+                                      fillColor: BaseColors.gray4,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              searchMatchFn: (item, searchValue) {
+                                final name = filterRM.state
+                                    .getMajorStudyProgram(item.value ?? '');
+                                return name
+                                    .toLowerCase()
+                                    .contains(searchValue.toLowerCase());
+                              },
+                            ),
+                            onMenuStateChange: (isOpen) {
+                              if (!isOpen) {
+                                _jurusanSearchController.clear();
+                              }
+                            },
+                            value: filterRM.state.tempSelectedJurusan,
+                            items: [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text(
+                                  '-- Semua Jurusan --',
+                                  style:
+                                      FontTheme.poppins12w400black().copyWith(
+                                    color: BaseColors.gray2,
+                                  ),
+                                ),
+                              ),
+                              ...filterRM.state.filteredJurusanOrgCodes
+                                  .map((orgCode) {
+                                return DropdownMenuItem<String?>(
+                                  value: orgCode,
+                                  child: Text(
+                                    filterRM.state
+                                        .getMajorStudyProgram(orgCode),
+                                    style: FontTheme.poppins12w400black(),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                filterRM.state.tempSelectedJurusan = newValue;
+                              });
+                            },
+                          ),
+                        ),
                       ),
                     const HeightSpace(20),
                     Text(
@@ -415,6 +609,11 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
+                    if (filterRM.state.tempSelectedFakultas != null && 
+                        filterRM.state.tempSelectedJurusan == null) {
+                      WarningMessenger('Harap pilih jurusan terlebih dahulu!').show(context);
+                      return;
+                    }
                     filterRM.state.applyFilters();
                     filterRM.notify();
                     nav.pop<bool>(true);
