@@ -30,14 +30,26 @@ class QuerySearchCourse extends QuerySearch {
       data['term'] = filterRM.state.selectedSemester.join(',');
     }
     if (filterRM.state.selectedType.isNotEmpty) {
-      // If Wajib UI is selected, it means we should search for code=UIGE
-      if (filterRM.state.selectedType.contains('WAJIB_UI')) {
+      final hasWajibUI = filterRM.state.selectedType.contains('WAJIB_UI');
+      final types = filterRM.state.selectedType
+          .where((type) => type != 'WAJIB_UI')
+          .toList();
+
+      if (hasWajibUI && types.isEmpty) {
+        // Only "Wajib UI" selected → filter by code prefix UIGE
         data['code'] = 'UIGE';
-      }
-      
-      // Keep only MANDATORY and ELECTIVE in course_type (exclude WAJIB_UI since we handle it via code)
-      final types = filterRM.state.selectedType.where((type) => type != 'WAJIB_UI').toList();
-      if (types.isNotEmpty) {
+      } else {
+        // When "Wajib UI" is combined with other types, include MANDATORY
+        // to capture UIGE courses (since UIGE courses are MANDATORY type)
+        if (hasWajibUI && !types.contains('MANDATORY')) {
+          types.add('MANDATORY');
+        }
+        // Include UNKNOWN as fallback for non-Fasilkom courses
+        if (types.contains('MANDATORY') || types.contains('ELECTIVE')) {
+          if (!types.contains('UNKNOWN')) {
+            types.add('UNKNOWN');
+          }
+        }
         data['course_type'] = types.join(',');
       }
     }
