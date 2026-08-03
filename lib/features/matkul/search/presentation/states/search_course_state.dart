@@ -113,15 +113,16 @@ class SearchCourseState
       final lessThanLimit = result.data.length < query.limit;
       _hasReachedMax = result.data.isEmpty || lessThanLimit;
 
-      final int lengthBefore = _courses?.length ?? 0;
-      
+      final lengthBefore = _courses?.length ?? 0;
+
       // Prevent duplicate record
       filterCourse(result.data);
-      
-      final int lengthAfter = _courses?.length ?? 0;
-      
+
+      final lengthAfter = _courses?.length ?? 0;
+
       // FIX: If backend returned items, but all of them were duplicates
-      // (no new items added), force hasReachedMax to true to prevent infinite loading loop.
+      // (no new items added), force hasReachedMax to true to prevent
+      // infinite loading loop.
       if (result.data.isNotEmpty && lengthBefore == lengthAfter) {
         _hasReachedMax = true;
       }

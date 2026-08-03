@@ -109,7 +109,11 @@ class CourseModel {
   @override
   int get hashCode => super.hashCode;
 
-  String get describe => '$code  •  $sks SKS  •  $codeDesc';
+  String get describe {
+    final type = courseTypeLabel(codeDesc, code);
+    final base = '$code  •  $sks SKS';
+    return type == null ? base : '$base  •  $type';
+  }
   String get cleanedDesc =>
       description?.isEmpty ?? true ? 'Tidak ada deskripsi' : '$description';
 }

@@ -13,7 +13,6 @@ class CardCourse extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -29,9 +28,10 @@ class CardCourse extends StatelessWidget {
         child: Row(
           children: <Widget>[
             Image.asset(
-              'assets/images/logo.png',
+              'assets/faculties/Fasilkom.png',
               width: 50,
               height: 50,
+              fit: BoxFit.contain,
             ),
             const WidthSpace(12),
             Expanded(
@@ -52,10 +52,13 @@ class CardCourse extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          model.codeDesc != model.code && model.codeDesc?.isNotEmpty == true
-                              ? '${model.sks} SKS   ${model.codeDesc}   ${model.code}'
-                              : '${model.sks} SKS   ${model.code}',
+                          courseSubtitle(
+                            sks: model.sks,
+                            codeDesc: model.codeDesc,
+                            code: model.code,
+                          ),
                           style: FontTheme.poppins12w500black(),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),

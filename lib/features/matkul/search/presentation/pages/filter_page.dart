@@ -609,6 +609,11 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
+                    if (filterRM.state.tempSelectedFakultas != null && 
+                        filterRM.state.tempSelectedJurusan == null) {
+                      WarningMessenger('Harap pilih jurusan terlebih dahulu!').show(context);
+                      return;
+                    }
                     filterRM.state.applyFilters();
                     filterRM.notify();
                     nav.pop<bool>(true);

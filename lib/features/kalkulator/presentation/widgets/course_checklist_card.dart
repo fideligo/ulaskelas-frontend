@@ -46,7 +46,7 @@ class CourseChecklistCard extends StatelessWidget {
             children: [
               _checkbox(),
               const WidthSpace(12),
-              _facultyLogo(),
+              FacultyLogo(code: code),
               const WidthSpace(12),
               Expanded(
                 child: Column(
@@ -90,45 +90,16 @@ class CourseChecklistCard extends StatelessWidget {
     );
   }
 
-  /// The faculty crest is not in the asset bundle, so a tinted tile stands in.
-  Widget _facultyLogo() {
-    return Container(
-      height: 38,
-      width: 38,
-      decoration: BoxDecoration(
-        color: BaseColors.purpleHearth.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.school_rounded,
-          size: 20,
-          color: BaseColors.purpleHearth,
-        ),
-      ),
-    );
-  }
-
-  /// `4 SKS · Wajib · CSGE602070`
+  /// `4 SKS   Wajib   CSGE602070`, ellipsized so a long name or code cannot
+  /// overflow the row on a narrow screen.
   Widget _details() {
-    final style = FontTheme.poppins12w400black().copyWith(
-      color: BaseColors.gray2,
-    );
-
-    return Row(
-      children: [
-        Text('${sks ?? 0} SKS', style: style),
-        const WidthSpace(10),
-        Text(type ?? '-', style: style),
-        const WidthSpace(10),
-        Flexible(
-          child: Text(
-            code ?? '-',
-            style: style,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
+    return Text(
+      courseSubtitle(sks: sks, codeDesc: type, code: code),
+      style: FontTheme.poppins12w400black().copyWith(
+        color: BaseColors.gray2,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

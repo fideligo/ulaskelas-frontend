@@ -50,8 +50,8 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
     // Then add the selected courses to it
     await calculatorRM.state.postCalculator(_courses, widget.givenSemester);
 
-    // Clear search course state so it's fresh next time
-    await searchCourseRM.setState((s) => s.clearSelectedCourses());
+    // Clear the manual-fill basket so it's fresh next time
+    manualFillRM.state.reset();
 
     // Refresh semester state so Home is updated
     await semesterRM.state.retrieveData();
@@ -203,58 +203,50 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
   Widget _buildCourseCard(CourseModel course) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: BaseColors.white,
+        boxShadow: BoxShadowDecorator().defaultShadow(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BaseColors.gray5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         children: [
-          Image.asset(
-            'assets/images/logo.png', // Dummy makara logo
-            width: 50,
-            height: 50,
-          ),
-          const WidthSpace(16),
+          FacultyLogo(code: course.code),
+          const WidthSpace(14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   course.name ?? '-',
-                  style: FontTheme.poppins14w700black(),
+                  style: FontTheme.poppins14w600black(),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const HeightSpace(4),
-                Row(
-                  children: [
-                    Text(
-                      course.codeDesc != course.code && course.codeDesc?.isNotEmpty == true
-                          ? '${course.sks ?? 0} SKS   ${course.codeDesc}   ${course.code ?? '-'}'
-                          : '${course.sks ?? 0} SKS   ${course.code ?? '-'}',
-                      style: FontTheme.poppins12w500black(),
-                    ),
-                  ],
+                const HeightSpace(3),
+                Text(
+                  courseSubtitle(
+                    sks: course.sks,
+                    codeDesc: course.codeDesc,
+                    code: course.code,
+                  ),
+                  style: FontTheme.poppins12w400black().copyWith(
+                    color: BaseColors.gray2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          const WidthSpace(8),
           IconButton(
             onPressed: () {
               setState(() {
                 _courses.remove(course);
               });
               // Keep state in sync in case user goes back
-              searchCourseRM.setState((s) => s.selectedCourses.remove(course));
+              manualFillRM.state.unselect(course);
             },
             icon: const Icon(
               Icons.delete_outline,

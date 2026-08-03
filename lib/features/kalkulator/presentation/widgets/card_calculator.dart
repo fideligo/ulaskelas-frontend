@@ -18,70 +18,50 @@ class CardCalculator extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: BaseColors.white,
+          boxShadow: BoxShadowDecorator().defaultShadow(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BaseColors.gray5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           children: [
-            Image.asset(
-              'assets/images/logo.png', // Dummy makara logo
-              width: 48,
-              height: 48,
-            ),
-            const WidthSpace(16),
+            FacultyLogo(code: model.courseCode),
+            const WidthSpace(14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     model.courseName ?? '-',
-                    style: FontTheme.poppins14w700black(),
+                    style: FontTheme.poppins14w600black(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const HeightSpace(4),
-                  Row(
-                    children: [
-                      Text(
-                        '${model.courseSKS ?? 0} SKS',
-                        style: FontTheme.poppins12w500black(),
-                      ),
-                      if (model.courseCodeDesc != model.courseCode && model.courseCodeDesc?.isNotEmpty == true) ...[
-                        const WidthSpace(12),
-                        Text(
-                          model.courseCodeDesc!,
-                          style: FontTheme.poppins12w500black(),
-                        ),
-                      ],
-                      const WidthSpace(12),
-                      Text(
-                        model.courseCode ?? '-',
-                        style: FontTheme.poppins12w500black(),
-                      ),
-                    ],
-                  ),
-                  const HeightSpace(4),
+                  const HeightSpace(3),
                   Text(
-                    (model.totalPercentage ?? 0) > 0 
-                      ? _getFinalScoreAndGrade(model.totalScore ?? 0) 
-                      : 'Belum ada nilai',
+                    _details,
                     style: FontTheme.poppins12w400black().copyWith(
                       color: BaseColors.gray2,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const HeightSpace(3),
+                  Text(
+                    (model.totalPercentage ?? 0) > 0
+                        ? _getFinalScoreAndGrade(model.totalScore ?? 0)
+                        : 'Belum ada nilai',
+                    style: FontTheme.poppins12w400black().copyWith(
+                      color: BaseColors.gray2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
+            const WidthSpace(8),
             IconButton(
               onPressed: () async => _deleteCard(context),
               icon: const Icon(
@@ -94,6 +74,12 @@ class CardCalculator extends StatelessWidget {
       ),
     );
   }
+
+  String get _details => courseSubtitle(
+        sks: model.courseSKS,
+        codeDesc: model.courseCodeDesc,
+        code: model.courseCode,
+      );
 
   Future<void> _deleteCard(BuildContext context) async {
     await showDialog(

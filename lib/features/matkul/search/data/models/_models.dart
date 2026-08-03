@@ -2,4 +2,6 @@
 
 import 'dart:math';
 
+import 'package:ulaskelas/core/utils/util.dart';
+
 part 'course_model.dart';

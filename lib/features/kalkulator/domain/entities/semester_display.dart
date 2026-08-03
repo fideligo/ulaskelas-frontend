@@ -63,33 +63,6 @@ String academicTermLabel(String givenSemester, int userGeneration) {
   return '$parity $startYear/${startYear + 1}';
 }
 
-/// Every semester a student can add, in study order: the two regular terms of
-/// an academic year followed by that year's short semester.
-///
-/// The short semester years follow the student's generation — a 2025 intake
-/// gets `sp_2026` .. `sp_2030` — so this list is never hardcoded.
-List<String> semesterCatalogue(int userGeneration) {
-  return [
-    '1',
-    '2',
-    'sp_${userGeneration + 1}',
-    '3',
-    '4',
-    'sp_${userGeneration + 2}',
-    '5',
-    '6',
-    'sp_${userGeneration + 3}',
-    '7',
-    '8',
-    'sp_${userGeneration + 4}',
-    '9',
-    '10',
-    'sp_${userGeneration + 5}',
-    '11',
-    '12',
-  ];
-}
-
 /// A GPA as shown to the user, or `-` when there is none yet.
 ///
 /// A semester with nothing filled in comes back as `-0.0`, which would
