@@ -13,7 +13,8 @@ class FilterPage extends StatefulWidget {
 
 class _FilterPageState extends BaseStateful<FilterPage> {
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _jurusanSearchController = TextEditingController();
+  final TextEditingController _jurusanSearchController =
+      TextEditingController();
 
   @override
   void dispose() {
@@ -497,8 +498,8 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                       childAspectRatio: 5,
                       children: filterRM.state.matkulTypes.map((item) {
                         return CheckboxTile(
-                          value:
-                              filterRM.state.tempSelectedType.contains(item.value),
+                          value: filterRM.state.tempSelectedType
+                              .contains(item.value),
                           text: item.text,
                           onChanged: (val) {
                             if (val ?? true) {
@@ -529,8 +530,8 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                       childAspectRatio: 5,
                       children: filterRM.state.sksTotals.map((item) {
                         return CheckboxTile(
-                          value:
-                              filterRM.state.tempSelectedSks.contains(item.value),
+                          value: filterRM.state.tempSelectedSks
+                              .contains(item.value),
                           text: item.text,
                           onChanged: (val) {
                             if (val ?? true) {
@@ -609,9 +610,10 @@ class _FilterPageState extends BaseStateful<FilterPage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
-                    if (filterRM.state.tempSelectedFakultas != null && 
+                    if (filterRM.state.tempSelectedFakultas != null &&
                         filterRM.state.tempSelectedJurusan == null) {
-                      WarningMessenger('Harap pilih jurusan terlebih dahulu!').show(context);
+                      WarningMessenger('Pilih jurusan terlebih dahulu')
+                          .show(context);
                       return;
                     }
                     filterRM.state.applyFilters();
