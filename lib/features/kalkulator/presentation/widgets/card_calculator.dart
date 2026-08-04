@@ -41,9 +41,7 @@ class CardCalculator extends StatelessWidget {
                   const HeightSpace(3),
                   Text(
                     _details,
-                    style: FontTheme.poppins12w400black().copyWith(
-                      color: BaseColors.gray2,
-                    ),
+                    style: FontTheme.poppins12w600black(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

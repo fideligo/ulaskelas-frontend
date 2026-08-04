@@ -41,6 +41,15 @@ String? courseTypeLabel(String? codeDesc, String? code) {
   if (label.isEmpty || label == (code?.trim() ?? '')) {
     return null;
   }
+  
+  if (label.toLowerCase().startsWith('wajib')) {
+    return 'Wajib';
+  }
+
+  if (label.toLowerCase().startsWith('peminatan')) {
+    return 'Pilihan';
+  }
+  
   return label;
 }
 

@@ -64,7 +64,7 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
 
   void _onAutoFillPressed() {
     if (_selectedSemester == null) {
-      ErrorMessenger('Pilih semester terlebih dahulu').show(context);
+      WarningMessenger('Pilih semester terlebih dahulu').show(context);
       return;
     }
     nav.goToAutoFillPage(_selectedSemester!);
@@ -72,7 +72,7 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
 
   void _onManualFillPressed() {
     if (_selectedSemester == null) {
-      ErrorMessenger('Pilih semester terlebih dahulu').show(context);
+      WarningMessenger('Pilih semester terlebih dahulu').show(context);
       return;
     }
     nav.goToManualFillPage(_selectedSemester!);
@@ -214,7 +214,7 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
             ),
             const HeightSpace(24),
             _buildAutoFillCard(),
-            const HeightSpace(16),
+            const HeightSpace(22),
             _buildManualFillCard(),
           ],
         ),
