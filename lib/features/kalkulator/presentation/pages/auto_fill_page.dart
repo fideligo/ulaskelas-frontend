@@ -101,6 +101,7 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
               sks: course.sks,
               type: course.type,
               code: course.code,
+              facultyName: course.facultyName,
               isSelected: data.isSelected(course),
               onTap: () => autoFillRM.state.toggle(course),
             ),
@@ -210,12 +211,15 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     nav.goToConfirmSemesterPage(
       givenSemester: widget.givenSemester,
       courses: autoFillRM.state.selectedCourses
-          .map((c) => CourseModel(
-                code: c.code,
-                name: c.name,
-                sks: c.sks,
-                codeDesc: c.type,
-              ))
+          .map(
+            (c) => CourseModel(
+              code: c.code,
+              name: c.name,
+              sks: c.sks,
+              codeDesc: c.type,
+              faculties: c.faculties,
+            ),
+          )
           .toList(),
     );
   }

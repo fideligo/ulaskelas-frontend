@@ -11,6 +11,7 @@ class SiakCourseModel {
     this.code,
     this.sks,
     this.type,
+    this.faculties,
   });
 
   /// Adapts a catalogue course into the shape the review step reads.
@@ -23,6 +24,7 @@ class SiakCourseModel {
     code = course.code;
     sks = course.sks;
     type = course.codeDesc;
+    faculties = course.faculties;
   }
 
   SiakCourseModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,13 @@ class SiakCourseModel {
     code = json['course_code'];
     sks = json['course_sks'];
     type = json['course_type'];
+    final rawFaculties = json['faculties'];
+    if (rawFaculties is List) {
+      faculties = rawFaculties
+          .whereType<Map<String, dynamic>>()
+          .map(FacultyModel.fromJson)
+          .toList();
+    }
   }
 
   String? name;
@@ -42,12 +51,26 @@ class SiakCourseModel {
   /// `Wajib` or `Pilihan`.
   String? type;
 
+  /// Faculties offering this course, carried over from the catalogue course.
+  /// Null until the scrape endpoint exists and returns it.
+  List<FacultyModel>? faculties;
+
+  /// The faculty the crest is drawn from. See [CourseModel.facultyName].
+  String? get facultyName {
+    final list = faculties;
+    if (list == null || list.isEmpty) {
+      return null;
+    }
+    return list.first.name;
+  }
+
   Map<String, dynamic> toJson() {
     final data = <String, dynamic>{};
     data['course_name'] = name;
     data['course_code'] = code;
     data['course_sks'] = sks;
     data['course_type'] = type;
+    data['faculties'] = faculties?.map((f) => f.toJson()).toList();
     return data;
   }
 }

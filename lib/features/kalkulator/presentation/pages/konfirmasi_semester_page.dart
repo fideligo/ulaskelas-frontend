@@ -214,7 +214,10 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
       ),
       child: Row(
         children: [
-          FacultyLogo(code: course.code),
+          FacultyLogo(
+            code: course.code,
+            facultyName: course.facultyName,
+          ),
           const WidthSpace(14),
           Expanded(
             child: Column(

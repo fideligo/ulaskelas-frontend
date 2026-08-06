@@ -13,6 +13,7 @@ class CourseChecklistCard extends StatelessWidget {
     this.sks,
     this.type,
     this.code,
+    this.facultyName,
     this.onTap,
   });
 
@@ -23,6 +24,10 @@ class CourseChecklistCard extends StatelessWidget {
   final String? type;
 
   final String? code;
+
+  /// Faculty name for the crest, e.g. `ILMU KOMPUTER`. Null falls the crest
+  /// back to the course-code heuristic.
+  final String? facultyName;
   final bool isSelected;
   final VoidCallback? onTap;
 
@@ -46,7 +51,10 @@ class CourseChecklistCard extends StatelessWidget {
             children: [
               _checkbox(),
               const WidthSpace(12),
-              FacultyLogo(code: code),
+              FacultyLogo(
+                code: code,
+                facultyName: facultyName,
+              ),
               const WidthSpace(12),
               Expanded(
                 child: Column(

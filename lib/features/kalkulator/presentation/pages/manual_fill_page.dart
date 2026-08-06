@@ -252,6 +252,7 @@ class _ManualFillPageState extends BaseStateful<ManualFillPage> {
           sks: course.sks,
           type: course.codeDesc,
           code: course.code,
+          facultyName: course.facultyName,
           isSelected: data.isSelected(course),
           onTap: () => manualFillRM.state.toggle(course),
         );
