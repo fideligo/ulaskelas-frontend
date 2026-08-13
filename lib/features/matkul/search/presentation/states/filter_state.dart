@@ -399,8 +399,19 @@ class FilterState {
         majorOrgCodes = codes;
       }
     } catch (e) {
-      // If API fails, leave empty – user can still use other filters
-      majorOrgCodes = [];
+      // Fallback if API fails
+      final codes = <String>[];
+      for (final item in _fallbackMajors) {
+        codes.add(item);
+        final parts = item.split(' - ');
+        final faculty = parts[0].trim();
+        final displayName = parts.length > 1 ? parts.sublist(1).join(' - ').trim() : item;
+        _majorDisplayNames[item] = displayName;
+        _majorFaculty[item] = faculty;
+        _majorStudyProgram[item] = displayName;
+        _majorEducationalProgram[item] = '';
+      }
+      majorOrgCodes = codes;
     } finally {
       isLoadingMajors = false;
       filterRM.notify();
