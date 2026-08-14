@@ -64,7 +64,7 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
 
   void _onAutoFillPressed() {
     if (_selectedSemester == null) {
-      ErrorMessenger('Pilih semester terlebih dahulu').show(context);
+      WarningMessenger('Pilih semester terlebih dahulu').show(context);
       return;
     }
     nav.goToAutoFillPage(_selectedSemester!);
@@ -72,7 +72,7 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
 
   void _onManualFillPressed() {
     if (_selectedSemester == null) {
-      ErrorMessenger('Pilih semester terlebih dahulu').show(context);
+      WarningMessenger('Pilih semester terlebih dahulu').show(context);
       return;
     }
     nav.goToManualFillPage(_selectedSemester!);
@@ -214,7 +214,7 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
             ),
             const HeightSpace(24),
             _buildAutoFillCard(),
-            const HeightSpace(16),
+            const HeightSpace(22),
             _buildManualFillCard(),
           ],
         ),
@@ -266,10 +266,9 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
                 Column(
                   children: [
                     Image.asset(
-                      'assets/images/logo.png', // Fallback to normal logo
+                      'assets/faculties/UI.png',
                       width: 48,
                       height: 48,
-                      color: BaseColors.goldenrod,
                     ),
                     const HeightSpace(4),
                     RichText(
@@ -303,14 +302,16 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
                         'Auto-Fill dari SLCM',
                         style: FontTheme.poppins16w700black().copyWith(
                           color: Colors.white,
+                          fontSize: 18,
                         ),
                       ),
-                      const HeightSpace(8),
+                      const HeightSpace(3),
                       Text(
                         'Matkul yang kamu pilih di IRS semester ini langsung masuk otomatis. Tidak perlu input manual.',
                         style: FontTheme.poppins12w400black().copyWith(
                           color: Colors.white.withOpacity(0.9),
                           height: 1.4,
+                          fontSize: 13,
                         ),
                       ),
                       const HeightSpace(16),
@@ -405,14 +406,17 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
                     children: [
                       Text(
                         'Pilih Matkul Manual',
-                        style: FontTheme.poppins16w700black(),
+                        style: FontTheme.poppins16w700black().copyWith(
+                          fontSize: 18,
+                        ),
                       ),
-                      const HeightSpace(8),
+                      const HeightSpace(3),
                       Text(
-                        'Cari dan pilih beberapa matkul sekaligus. Cocok jika matkul tidak terdaftar di SLCM atau mau custom',
+                        'Cari dan pilih beberapa matkul sekaligus. Cocok jika matkul tidak terdaftar di SLCM atau mau custom.',
                         style: FontTheme.poppins12w400black().copyWith(
                           color: BaseColors.gray1,
                           height: 1.4,
+                          fontSize: 13,
                         ),
                       ),
                       const HeightSpace(16),

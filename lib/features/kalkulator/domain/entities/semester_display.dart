@@ -47,19 +47,20 @@ String academicTermLabel(String givenSemester, int userGeneration) {
   if (givenSemester.contains('sp')) {
     final year = int.tryParse(givenSemester.split('_').last);
     if (year == null) {
-      return 'Semester PENDEK';
+      return 'SP';
     }
-    return 'Semester PENDEK ${year - 1}/$year';
+    return 'SP ${year - 1}/$year';
   }
 
   final term = int.tryParse(givenSemester);
   if (term == null || userGeneration <= 0) {
-    return semesterFullLabel(givenSemester);
+    final label = semesterFullLabel(givenSemester);
+    return label.startsWith('Semester ') ? label.substring(9) : label;
   }
 
   final startYear = userGeneration + (term - 1) ~/ 2;
   final parity = term.isEven ? 'GENAP' : 'GANJIL';
-  return 'Semester $parity $startYear/${startYear + 1}';
+  return '$parity $startYear/${startYear + 1}';
 }
 
 /// A GPA as shown to the user, or `-` when there is none yet.

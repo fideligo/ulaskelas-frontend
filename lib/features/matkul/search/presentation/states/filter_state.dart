@@ -7,11 +7,13 @@ class FilterState {
   final selectedSks = <String>[];
   final selectedSemester = <String>[];
   String? selectedJurusan;
+  String? selectedFakultas;
 
   final tempSelectedType = <String>[];
   final tempSelectedSks = <String>[];
   final tempSelectedSemester = <String>[];
   String? tempSelectedJurusan;
+  String? tempSelectedFakultas;
 
   void initTempState() {
     tempSelectedType.clear();
@@ -21,6 +23,7 @@ class FilterState {
     tempSelectedSemester.clear();
     tempSelectedSemester.addAll(selectedSemester);
     tempSelectedJurusan = selectedJurusan;
+    tempSelectedFakultas = selectedFakultas;
   }
 
   void applyFilters() {
@@ -31,21 +34,58 @@ class FilterState {
     selectedSemester.clear();
     selectedSemester.addAll(tempSelectedSemester);
     selectedJurusan = tempSelectedJurusan;
+    selectedFakultas = tempSelectedFakultas;
   }
 
   /// Major list fetched from the backend API.
   List<String> majorOrgCodes = [];
   final _majorDisplayNames = <String, String>{};
+  final _majorFaculty = <String, String>{};
+  final _majorStudyProgram = <String, String>{};
+  final _majorEducationalProgram = <String, String>{};
   String getMajorDisplayName(String orgCode) =>
       _majorDisplayNames[orgCode] ?? orgCode;
+  String getMajorFaculty(String orgCode) =>
+      _majorFaculty[orgCode] ?? '';
+  String getMajorStudyProgram(String orgCode) {
+    final sp = _majorStudyProgram[orgCode] ?? orgCode;
+    final ep = _majorEducationalProgram[orgCode] ?? '';
+    if (ep.isEmpty) return sp;
+    return '$sp - $ep';
+  }
+
+  /// Get sorted list of unique faculty names.
+  List<String> get facultyList {
+    final faculties = <String>{};
+    for (final orgCode in majorOrgCodes) {
+      final faculty = _majorFaculty[orgCode];
+      if (faculty != null && faculty.isNotEmpty) {
+        faculties.add(faculty);
+      }
+    }
+    final sorted = faculties.toList()..sort((a, b) => a.compareTo(b));
+    return sorted;
+  }
+
+  /// Get org codes filtered by the currently selected faculty.
+  List<String> get filteredJurusanOrgCodes {
+    if (tempSelectedFakultas == null) return [];
+    return majorOrgCodes
+        .where((code) => _majorFaculty[code] == tempSelectedFakultas)
+        .toList();
+  }
 
   /// Whether majors are currently being loaded from the API.
   bool isLoadingMajors = false;
 
   final matkulTypes = [
     CheckboxItem(
-      text: 'Wajib',
+      text: 'Wajib Jurusan',
       value: 'MANDATORY',
+    ),
+    CheckboxItem(
+      text: 'Wajib UI',
+      value: 'WAJIB_UI',
     ),
     CheckboxItem(
       text: 'Pilihan',
@@ -347,14 +387,31 @@ class FilterState {
           final map = item as Map<String, dynamic>;
           final orgCode = map['org_code'] as String;
           final displayName = map['display_name'] as String;
+          final faculty = map['faculty'] as String? ?? '';
+          final studyProgram = map['study_program'] as String? ?? '';
+          final educationalProgram = map['educational_program'] as String? ?? '';
           codes.add(orgCode);
           _majorDisplayNames[orgCode] = displayName;
+          _majorFaculty[orgCode] = faculty;
+          _majorStudyProgram[orgCode] = studyProgram;
+          _majorEducationalProgram[orgCode] = educationalProgram;
         }
         majorOrgCodes = codes;
       }
     } catch (e) {
-      // If API fails, leave empty – user can still use other filters
-      majorOrgCodes = [];
+      // Fallback if API fails
+      final codes = <String>[];
+      for (final item in _fallbackMajors) {
+        codes.add(item);
+        final parts = item.split(' - ');
+        final faculty = parts[0].trim();
+        final displayName = parts.length > 1 ? parts.sublist(1).join(' - ').trim() : item;
+        _majorDisplayNames[item] = displayName;
+        _majorFaculty[item] = faculty;
+        _majorStudyProgram[item] = displayName;
+        _majorEducationalProgram[item] = '';
+      }
+      majorOrgCodes = codes;
     } finally {
       isLoadingMajors = false;
       filterRM.notify();
@@ -398,9 +455,11 @@ class FilterState {
     selectedSks.clear();
     selectedSemester.clear();
     selectedJurusan = null;
+    selectedFakultas = null;
     tempSelectedType.clear();
     tempSelectedSks.clear();
     tempSelectedSemester.clear();
     tempSelectedJurusan = null;
+    tempSelectedFakultas = null;
   }
 }
