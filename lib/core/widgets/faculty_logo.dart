@@ -1,74 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:ulaskelas/core/theme/_theme.dart';
 
-/// Backend faculty name → crest filename in `assets/faculties/`.
+/// Course-code prefix → crest filename in `assets/faculties/`.
 ///
-/// Keys are the names as `study_program.faculty` stores them: uppercase
-/// Indonesian, no `Fakultas` prefix. Every slug here has a matching PNG.
+/// A SIAK code opens with two letters naming the faculty that owns the course
+/// — `CSCM603117` (Fasilkom), `LWET600153` (Hukum), `UIGE600001` (MPKT, the
+/// university's own). That prefix is the only owner signal the app can trust.
+/// The `faculties` array on the course endpoints is built from study-program
+/// mappings and sorted by name, so it lists every faculty whose curriculum
+/// includes a course, with no notion of an owner; reading it handed every
+/// cross-listed course to whichever faculty sorted first in the alphabet.
 ///
-/// The three university-level keys are defensive. `get_faculties` builds the
-/// array from a course's study-program mappings, so `study_program.faculty` is
-/// always a real faculty — nothing in the current backend emits any of them.
-/// They cost nothing and mean a future university-owned org unit lands on the
-/// makara instead of a neutral icon; the branch that actually puts the UI crest
-/// on MPKT today is the course-code one in [FacultyLogo].
-const _facultyAssetMap = <String, String>{
-  'UNIVERSITAS INDONESIA': 'UI',
-  'UNIVERSITAS': 'UI',
-  'MKU': 'UI',
-  'ILMU KOMPUTER': 'Fasilkom',
-  'EKONOMI': 'FEB',
-  'TEKNIK': 'FT',
-  'MATEMATIKA & ILMU PENGETAHUAN ALAM': 'FMIPA',
-  'ILMU PENGETAHUAN BUDAYA': 'FIB',
-  'ILMU SOSIAL & ILMU POLITIK': 'FISIP',
-  'KEDOKTERAN': 'FK',
-  'KEDOKTERAN GIGI': 'FKG',
-  'KESEHATAN MASYARAKAT': 'FKM',
-  'ILMU ADMINISTRASI': 'FIA',
-  'ILMU KEPERAWATAN': 'FIK',
-  'FARMASI': 'FF',
-  'HUKUM': 'FH',
-  'PSIKOLOGI': 'FPsi',
-  'VOKASI': 'Vokasi',
+/// Values are the exact PNG basenames, which are not uniformly capitalised —
+/// `FPsi` and `Vokasi` are spelled as they appear on disk. Every crest in the
+/// directory is reachable from this map, and no key maps to a missing file.
+const _codePrefixAssetMap = <String, String>{
+  'CS': 'Fasilkom',
+  'SC': 'FMIPA',
+  'EN': 'FT',
+  'LW': 'FH',
+  'SP': 'FISIP',
+  'PS': 'FPsi',
+  'HM': 'FIB',
+  'VO': 'Vokasi',
+  'EC': 'FEB',
+  'NS': 'FIK',
+  'PH': 'FKM',
+  'PM': 'FF',
+  'AD': 'FIA',
+  'DN': 'FKG',
+  'MD': 'FK',
+  'UI': 'UI',
 };
 
-/// Resolves a backend faculty name to its crest slug, or null when the name is
-/// absent or not one we ship a crest for.
+/// Shown when the code says nothing we recognise: an unfamiliar prefix, or no
+/// code at all.
 ///
-/// The name is normalised before lookup because casing and spacing are not
-/// guaranteed across SSO and SunJad, and the two spell the conjunction both
-/// ways (`MATEMATIKA DAN ILMU...` / `MATEMATIKA & ILMU...`). Folding ` DAN `
-/// onto ` & ` only ever turns a miss into a hit — it cannot mis-map a name
-/// that already matched.
-String? facultyAssetSlug(String? facultyName) {
-  final normalized = facultyName
-      ?.trim()
-      .toUpperCase()
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .replaceAll(' DAN ', ' & ');
-  if (normalized == null || normalized.isEmpty) {
-    return null;
-  }
-  return _facultyAssetMap[normalized];
-}
+/// The university makara is the honest answer there — every course belongs to
+/// UI even when we cannot place the faculty — and unlike a faculty crest it
+/// cannot misattribute one faculty's course to another.
+const _fallbackSlug = 'UI';
 
 /// The faculty crest shown at the head of a course card.
 ///
-/// Resolution order:
-/// 1. [code], when it marks a university-wide course — see [_isUniversityCode].
-///    This outranks [facultyName] on purpose: the backend derives `faculties`
-///    from a course's study-program mappings, so on MPKT the array is every
-///    faculty that teaches it, not an owner. Reading it there would stamp
-///    whichever faculty sorts first onto a course the university owns.
-/// 2. [facultyName] — the course's own faculty, from the `faculties` array on
-///    the course endpoints. This is the only branch that is actually correct
-///    for a non-Fasilkom course.
-/// 3. [code] — the legacy heuristic, for callers whose model has no faculty
-///    yet (anything fed by `CalculatorModel`). Every Fasilkom code printed in
-///    SIAK starts with `CS` (`CSGE`, `CSCM`, `CSIE`, …). A missing code also
-///    keeps the makara, since the calculator is Fasilkom-only for now.
-/// 4. A neutral icon, when none of them says anything.
+/// Resolution is the first two letters of [code], looked up in
+/// [_codePrefixAssetMap], falling back to [_fallbackSlug]. There is no second
+/// tier and no empty state: this always renders a crest.
 ///
 /// Renders bare — no tile, tint, or background — per the unified card design.
 class FacultyLogo extends StatelessWidget {
@@ -80,64 +56,40 @@ class FacultyLogo extends StatelessWidget {
     this.height = 48,
   });
 
-  /// Course code, e.g. `CSGE602070`. Null when the caller has no code to give.
+  /// Course code, e.g. `CSGE602070`. Null when the caller has no code to give,
+  /// which lands on [_fallbackSlug].
   final String? code;
 
-  /// Faculty name as the backend spells it, e.g. `ILMU KOMPUTER`. Null when
-  /// the caller's model does not carry one.
+  /// Retained so the call sites already passing it keep compiling.
+  ///
+  /// Deliberately unread. The backend's faculty names cannot identify the
+  /// owning faculty of a cross-listed course — see [_codePrefixAssetMap] — so
+  /// the crest no longer consults them.
   final String? facultyName;
 
-  /// The crest box. 44×46 is the design spec; the PNG is letterboxed inside it
+  /// The crest box. 44×48 is the design spec; the PNG is letterboxed inside it
   /// by [BoxFit.contain], so a square source stays 44 wide and centred.
   final double width;
   final double height;
 
-  bool get _isFasilkomCode {
+  String get _slug {
     final trimmed = code?.trim().toUpperCase() ?? '';
-    if (trimmed.isEmpty) {
-      return true;
+    if (trimmed.length < 2) {
+      return _fallbackSlug;
     }
-    return trimmed.startsWith('CS');
-  }
-
-  /// Whether the code belongs to the university rather than a faculty: MPKT,
-  /// Agama, Olahraga/Seni and the rest of what SIAK files under `UIGE`
-  /// ("Wajib UI" in `course_prefixes.json`), plus the `UIST` stream. Faculty
-  /// prefixes are the faculty's own initials — `CS`, `EN`, `ECON` — so none of
-  /// them opens with `UI` and the check cannot swallow a faculty course.
-  ///
-  /// An empty code is not university-wide; it stays with [_isFasilkomCode].
-  bool get _isUniversityCode {
-    return code?.trim().toUpperCase().startsWith('UI') ?? false;
-  }
-
-  String? get _slug {
-    if (_isUniversityCode) {
-      return 'UI';
-    }
-    return facultyAssetSlug(facultyName) ??
-        (_isFasilkomCode ? 'Fasilkom' : null);
+    return _codePrefixAssetMap[trimmed.substring(0, 2)] ?? _fallbackSlug;
   }
 
   @override
   Widget build(BuildContext context) {
-    final slug = _slug;
-
-    // Sized either way so rows stay aligned when a fallback sits next to a
-    // crest in the same list.
+    // Sized so rows stay aligned down a list whatever crest each card draws.
     return SizedBox(
       width: width,
       height: height,
-      child: slug != null
-          ? Image.asset(
-              'assets/faculties/$slug.png',
-              fit: BoxFit.contain,
-            )
-          : Icon(
-              Icons.school_rounded,
-              size: (width < height ? width : height) * 0.5,
-              color: BaseColors.gray3,
-            ),
+      child: Image.asset(
+        'assets/faculties/$_slug.png',
+        fit: BoxFit.contain,
+      ),
     );
   }
 }
