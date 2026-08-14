@@ -77,7 +77,7 @@ class FacultyLogo extends StatelessWidget {
     this.code,
     this.facultyName,
     this.width = 44,
-    this.height = 46,
+    this.height = 48,
   });
 
   /// Course code, e.g. `CSGE602070`. Null when the caller has no code to give.
