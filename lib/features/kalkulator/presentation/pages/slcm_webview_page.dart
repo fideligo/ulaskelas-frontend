@@ -25,6 +25,10 @@ class SlcmWebViewPage extends StatefulWidget {
 class _SlcmWebViewPageState extends State<SlcmWebViewPage> {
   late final WebViewController _controller;
 
+  /// True while the DELETE is in flight, so a second back press cannot fire a
+  /// second cancel or pop the page out from under the first one.
+  bool _leaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -44,25 +48,71 @@ class _SlcmWebViewPageState extends State<SlcmWebViewPage> {
   }
 
   @override
+  void dispose() {
+    // Safety net for the routes that never reach [_leave]: a predictive-back
+    // gesture that completes without PopScope, or this page being removed
+    // because something above it popped the stack. `isLoginPageOpen` is
+    // already false when the session settled on its own, so a successful
+    // scrape is never cancelled here.
+    if (autoFillRM.state.isLoginPageOpen) {
+      unawaited(autoFillRM.state.cancelFromLoginPage());
+    }
+    super.dispose();
+  }
+
+  /// Releases the SLCM session, then lets the page go.
+  ///
+  /// Awaited rather than fired and forgotten: the backend allows one live
+  /// session at a time, so the slot has to be free before the student can get
+  /// back to the Auto-Fill button, or the retry is refused with a 409.
+  Future<void> _leave() async {
+    if (_leaving) {
+      return;
+    }
+    setState(() => _leaving = true);
+
+    await autoFillRM.state.cancelFromLoginPage();
+
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BaseColors.white,
-      appBar: AppBar(
+    return PopScope(
+      // Never pop straight away: the session has to be released first. [_leave]
+      // performs the pop once the DELETE has come back.
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        unawaited(_leave());
+      },
+      child: Scaffold(
         backgroundColor: BaseColors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: BaseColors.mineShaft),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'SSO Login',
-          style: FontTheme.poppins14w700black().copyWith(
-            fontSize: 16,
+        appBar: AppBar(
+          backgroundColor: BaseColors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: BaseColors.mineShaft),
+            // Routed through [_leave] rather than popping directly. A bare
+            // `Navigator.pop` does not consult PopScope, so it would leave the
+            // session behind.
+            onPressed: _leaving ? null : () => unawaited(_leave()),
           ),
+          title: Text(
+            'SLCM Autofill',
+            style: FontTheme.poppins14w700black().copyWith(
+              fontSize: 16,
+            ),
+          ),
+          titleSpacing: 0,
         ),
-        titleSpacing: 0,
+        body: WebViewWidget(controller: _controller),
       ),
-      body: WebViewWidget(controller: _controller),
     );
   }
 }

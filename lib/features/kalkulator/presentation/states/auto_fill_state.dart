@@ -53,6 +53,13 @@ class AutoFillState implements FutureState<AutoFillState, String> {
 
   SlcmSessionStatus get status => _status;
 
+  /// Whether the login WebView is still showing on the student's behalf.
+  ///
+  /// False once [_closeLoginPage] has dismissed it on a settled session, which
+  /// is what stops the WebView's own dispose hook from cancelling a session
+  /// that just succeeded.
+  bool get isLoginPageOpen => _loginPageOpen;
+
   /// The full scrape result. `matched` is what [courses] renders; `duplicates`
   /// and `unmatched` are the rows the import will not touch.
   SlcmPreviewModel? get preview => _preview;
@@ -127,6 +134,44 @@ class AutoFillState implements FutureState<AutoFillState, String> {
       return;
     }
     await _repo.deleteSession(sessionId);
+  }
+
+  /// Cancels the session because the student backed out of the login WebView.
+  ///
+  /// This is the case that strands a session: the auto-fill page underneath
+  /// survives the pop, so nothing else runs, and the backend keeps the shared
+  /// browser locked until `SLCM_AUTOFILL_TIMEOUT_SECONDS` elapses — every
+  /// retry in that window is refused with 409 `SESSION_ALREADY_ACTIVE`.
+  ///
+  /// The DELETE is awaited so the slot is free before the student can reach
+  /// the button again.
+  ///
+  /// Unlike [cancel], which runs while the auto-fill page is being disposed,
+  /// this leaves that page on screen — so it settles the poll with an error
+  /// rather than completing quietly into an empty course list.
+  Future<void> cancelFromLoginPage() async {
+    // Cleared first: the WebView's dispose hook reads this to decide whether
+    // it still needs to cancel, and must see the work already claimed.
+    _loginPageOpen = false;
+    _stopPolling();
+
+    final settled = _settled;
+    _settled = null;
+
+    final sessionId = _sessionId;
+    _sessionId = null;
+
+    if (sessionId != null && !_status.isTerminal) {
+      await _repo.deleteSession(sessionId);
+    }
+    _status = SlcmSessionStatus.cancelled;
+
+    if (settled != null && !settled.isCompleted) {
+      settled.completeError(
+        GeneralFailure(message: 'Login SLCM dibatalkan.'),
+      );
+    }
+    autoFillRM.notify();
   }
 
   /// Imports the scraped preview server-side.

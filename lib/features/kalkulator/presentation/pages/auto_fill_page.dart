@@ -59,7 +59,7 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
         listenTo: autoFillRM,
         onIdle: _buildWaiting,
         onWaiting: _buildWaiting,
-        onError: (dynamic error, refresh) => _buildError(),
+        onError: (dynamic error, refresh) => _buildError(error),
         onData: _buildCourseList,
       ),
     );
@@ -255,12 +255,18 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     }
   }
 
-  Widget _buildError() {
+  /// Shows the reason the session ended when there is one — an expiry, a
+  /// scraper failure, or the student cancelling the login — and falls back to
+  /// the generic line otherwise.
+  Widget _buildError(dynamic error) {
+    final message = error is Failure ? error.message : null;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Text(
-          'Gagal mengambil data dari SLCM.',
+          message?.isNotEmpty ?? false
+              ? message!
+              : 'Gagal mengambil data dari SLCM.',
           style: FontTheme.poppins12w400black().copyWith(
             color: BaseColors.gray2,
           ),
