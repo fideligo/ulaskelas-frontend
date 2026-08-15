@@ -4,10 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ristek_material_component/ristek_material_component.dart';
 import 'package:ulaskelas/core/_core.dart';
+import 'package:ulaskelas/core/error/_error.dart';
 import 'package:ulaskelas/features/kalkulator/data/datasources/_datasources.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/calculator_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/component_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/siak_course_model.dart';
+import 'package:ulaskelas/features/kalkulator/data/models/slcm_session_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/repositories/_repositories.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/component_breakdown.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/course_status.dart';
@@ -20,6 +22,7 @@ import 'package:ulaskelas/features/matkul/main/data/datasources/_datasources.dar
 import 'package:ulaskelas/features/matkul/main/data/repositories/_repositories.dart';
 import 'package:ulaskelas/features/matkul/main/domain/entities/query_search_course.dart';
 import 'package:ulaskelas/features/matkul/main/domain/repositories/_repositories.dart';
+import 'package:ulaskelas/services/launch_service.dart';
 
 import '../../../../core/utils/in_app_tour/showcase_flow.dart';
 import '../../../../core/utils/util.dart';

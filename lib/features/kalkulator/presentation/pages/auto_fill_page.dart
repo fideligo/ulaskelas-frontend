@@ -27,6 +27,15 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
   }
 
   @override
+  void dispose() {
+    // Stops the poll timer and hands the shared SLCM browser back. The backend
+    // allows one live session at a time, so leaving on an unfinished session
+    // would lock the student out of their next attempt until it times out.
+    unawaited(autoFillRM.state.cancel());
+    super.dispose();
+  }
+
+  @override
   ScaffoldAttribute buildAttribute() {
     return ScaffoldAttribute(
       bottomNavigation: _buildContinueButton(),
@@ -214,6 +223,9 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
       courses: autoFillRM.state.selectedCourses
           .map(
             (c) => CourseModel(
+              // The import posts ids; dropping it here makes the confirm step
+              // throw on `e.id!`.
+              id: c.id,
               code: c.code,
               name: c.name,
               sks: c.sks,
