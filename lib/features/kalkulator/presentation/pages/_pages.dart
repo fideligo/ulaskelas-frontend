@@ -27,6 +27,7 @@ import '../../../matkul/search/presentation/widgets/_widgets.dart';
 import '../../../matkul/search/presentation/pages/_pages.dart';
 import '../../data/models/calculator_model.dart';
 import '../../data/models/semester_model.dart';
+import '../../data/models/slcm_session_model.dart';
 import '../../domain/entities/component_breakdown.dart';
 import '../../domain/entities/grade_target.dart';
 import '../../domain/entities/query_component.dart';

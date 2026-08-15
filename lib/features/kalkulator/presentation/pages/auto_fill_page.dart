@@ -57,8 +57,8 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     return SafeArea(
       child: OnBuilder<AutoFillState>.all(
         listenTo: autoFillRM,
-        onIdle: WaitingView.new,
-        onWaiting: WaitingView.new,
+        onIdle: _buildWaiting,
+        onWaiting: _buildWaiting,
         onError: (dynamic error, refresh) => _buildError(),
         onData: _buildCourseList,
       ),
@@ -200,6 +200,59 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
         );
       },
     );
+  }
+
+  /// Held for as long as the student takes to log into SLCM, so it says which
+  /// half of the wait we are in rather than spinning mutely.
+  ///
+  /// Reads the status straight off the state: `AutoFillState._apply` calls
+  /// `autoFillRM.notify()` on every poll, which rebuilds this without leaving
+  /// the waiting branch.
+  Widget _buildWaiting() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              height: 28,
+              width: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: BaseColors.purpleHearth,
+              ),
+            ),
+            const HeightSpace(16),
+            Text(
+              _waitingLabel,
+              style: FontTheme.poppins14w400black().copyWith(
+                color: BaseColors.gray2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String get _waitingLabel {
+    switch (autoFillRM.state.status) {
+      case SlcmSessionStatus.waitingLogin:
+        return 'Menunggu Anda login di browser...';
+      case SlcmSessionStatus.scraping:
+        return 'Sedang mengambil data dari SLCM...';
+      // Reached only in the gap before the session exists, and briefly at
+      // `ready` before the waiting branch hands over to the list.
+      case SlcmSessionStatus.ready:
+      case SlcmSessionStatus.imported:
+      case SlcmSessionStatus.failed:
+      case SlcmSessionStatus.expired:
+      case SlcmSessionStatus.cancelled:
+      case SlcmSessionStatus.unknown:
+        return 'Memproses...';
+    }
   }
 
   Widget _buildError() {
