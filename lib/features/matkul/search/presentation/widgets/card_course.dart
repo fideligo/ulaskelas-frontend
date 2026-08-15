@@ -27,11 +27,9 @@ class CardCourse extends StatelessWidget {
         ),
         child: Row(
           children: <Widget>[
-            Image.asset(
-              'assets/faculties/Fasilkom.png',
-              width: 50,
-              height: 50,
-              fit: BoxFit.contain,
+            FacultyLogo(
+              code: model.code,
+              facultyName: model.facultyName,
             ),
             const WidthSpace(12),
             Expanded(

@@ -13,6 +13,12 @@ class CalculatorModel {
   String? courseCode;
   String? courseCodeDesc;
 
+  // TODO: await faculties field from BE
+  // `CalculatorSerializer` on feat/cross-faculty-course-catalog still returns
+  // only id/user/course_id/course_name/course_sks/total_score/total_percentage
+  // — no `faculties`. Until it does, cards fed by this model fall back to the
+  // course-code heuristic in FacultyLogo.
+
   CalculatorModel({
     this.givenSemester,
     this.id,
