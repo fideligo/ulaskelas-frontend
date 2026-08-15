@@ -232,6 +232,16 @@ class NavigationServiceState implements Navigation {
     );
   }
 
+  /// Opens the SLCM login WebView. The future completes when the page is
+  /// popped, so callers that need to keep working while the student logs in
+  /// must not await it.
+  Future<void> goToSlcmWebViewPage(String popupUrl) {
+    return nav.push<void>(
+      SlcmWebViewPage(popupUrl: popupUrl),
+      RouteName.slcmWebViewPage,
+    );
+  }
+
   Future<void> goToManualFillPage(String givenSemester) {
     MixpanelService.track('calculator_add_course');
     return nav.push<void>(

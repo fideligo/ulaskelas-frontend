@@ -22,7 +22,6 @@ import 'package:ulaskelas/features/matkul/main/data/datasources/_datasources.dar
 import 'package:ulaskelas/features/matkul/main/data/repositories/_repositories.dart';
 import 'package:ulaskelas/features/matkul/main/domain/entities/query_search_course.dart';
 import 'package:ulaskelas/features/matkul/main/domain/repositories/_repositories.dart';
-import 'package:ulaskelas/services/launch_service.dart';
 
 import '../../../../core/utils/in_app_tour/showcase_flow.dart';
 import '../../../../core/utils/util.dart';

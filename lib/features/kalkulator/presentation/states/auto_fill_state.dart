@@ -40,6 +40,9 @@ class AutoFillState implements FutureState<AutoFillState, String> {
   /// Guards against a slow poll overlapping the next tick.
   bool _pollInFlight = false;
 
+  /// Whether the login WebView was pushed and has not been closed from here.
+  bool _loginPageOpen = false;
+
   List<SiakCourseModel> get courses => _courses ?? [];
 
   String? get givenSemester => _givenSemester;
@@ -89,12 +92,13 @@ class AutoFillState implements FutureState<AutoFillState, String> {
     _sessionId = sessionId;
     _status = session.status;
 
-    // Opened externally rather than in an embedded WebView: SLCM's SSO sets
-    // cookies the system browser already knows how to hold, and the popup URL
-    // is single-use, so it must not be reloaded by a rebuild.
+    // Deliberately not awaited: the push completes only when the page is
+    // popped, and the poll below has to run while the student is still logging
+    // in. SlcmWebViewPage loads the single-use URL exactly once.
     final popupUrl = session.popupUrl;
     if (popupUrl != null && popupUrl.isNotEmpty) {
-      await LaunchServices.launchInBrowser(popupUrl);
+      _loginPageOpen = true;
+      unawaited(nav.goToSlcmWebViewPage(popupUrl));
     }
 
     autoFillRM.notify();
@@ -232,6 +236,7 @@ class AutoFillState implements FutureState<AutoFillState, String> {
 
   void _succeed() {
     _stopPolling();
+    _closeLoginPage();
     final settled = _settled;
     if (settled != null && !settled.isCompleted) {
       settled.complete();
@@ -241,10 +246,24 @@ class AutoFillState implements FutureState<AutoFillState, String> {
 
   void _failWith(Failure failure) {
     _stopPolling();
+    _closeLoginPage();
     final settled = _settled;
     if (settled != null && !settled.isCompleted) {
       settled.completeError(failure);
     }
+  }
+
+  /// Dismisses the login WebView once the session settles, so the student
+  /// lands on the review list (or the error) rather than a spent noVNC screen.
+  ///
+  /// A no-op when the WebView was never opened or the student already backed
+  /// out of it — popping to a route we are already on does nothing.
+  void _closeLoginPage() {
+    if (!_loginPageOpen) {
+      return;
+    }
+    _loginPageOpen = false;
+    nav.popUntil(RouteName.autoFillPage);
   }
 
   void _stopPolling() {
@@ -255,6 +274,7 @@ class AutoFillState implements FutureState<AutoFillState, String> {
 
   void _reset() {
     _stopPolling();
+    _loginPageOpen = false;
     _settled = null;
     _courses = null;
     _selected.clear();
