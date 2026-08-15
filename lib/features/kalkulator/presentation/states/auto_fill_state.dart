@@ -125,6 +125,19 @@ class AutoFillState implements FutureState<AutoFillState, String> {
     await _repo.deleteSession(sessionId);
   }
 
+  /// Imports the scraped preview server-side.
+  ///
+  /// Throws the [Failure] so the caller can surface it. On success the session
+  /// moves to `imported`, which is terminal — that is what stops [cancel] from
+  /// then trying to DELETE a session that has already been consumed.
+  Future<void> confirm(String sessionId) async {
+    final resp = await _repo.confirmSession(sessionId);
+    resp.fold(
+      (failure) => throw failure,
+      (result) => _status = result.data.status,
+    );
+  }
+
   void toggle(SiakCourseModel course) {
     if (!_selected.remove(course)) {
       _selected.add(course);

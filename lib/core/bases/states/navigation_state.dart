@@ -240,14 +240,18 @@ class NavigationServiceState implements Navigation {
     );
   }
 
+  /// [slcmSessionId] marks the SLCM autofill flow. Left null by manual fill,
+  /// which keeps the page on its existing behaviour.
   Future<void> goToConfirmSemesterPage({
     required String givenSemester,
     required List<CourseModel> courses,
+    String? slcmSessionId,
   }) {
     return nav.push<void>(
       KonfirmasiSemesterPage(
         givenSemester: givenSemester,
         selectedCourses: courses,
+        slcmSessionId: slcmSessionId,
       ),
       RouteName.confirmSemesterPage,
     );

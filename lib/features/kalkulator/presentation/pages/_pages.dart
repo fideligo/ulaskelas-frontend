@@ -10,6 +10,7 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 import 'package:ulaskelas/core/bases/states/_states.dart';
 import 'package:ulaskelas/core/constants/_constants.dart';
+import 'package:ulaskelas/core/error/_error.dart';
 import 'package:ulaskelas/core/theme/_theme.dart';
 import 'package:ulaskelas/core/utils/in_app_tour/containers/_containers.dart';
 import 'package:ulaskelas/core/utils/in_app_tour/pages/_pages.dart';

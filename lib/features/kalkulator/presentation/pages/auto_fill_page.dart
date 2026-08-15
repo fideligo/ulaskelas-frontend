@@ -272,6 +272,9 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
 
   void _goToReview() {
     nav.goToConfirmSemesterPage(
+      // Puts the review step on the SLCM branch: it confirms the session
+      // server-side instead of posting the course list itself.
+      slcmSessionId: autoFillRM.state.sessionId,
       givenSemester: widget.givenSemester,
       courses: autoFillRM.state.selectedCourses
           .map(

@@ -4,11 +4,16 @@ class KonfirmasiSemesterPage extends StatefulWidget {
   const KonfirmasiSemesterPage({
     required this.givenSemester,
     required this.selectedCourses,
+    this.slcmSessionId,
     super.key,
   });
 
   final String givenSemester;
   final List<CourseModel> selectedCourses;
+
+  /// Set only by the SLCM autofill flow. Null means manual fill, which keeps
+  /// every existing behaviour on this page.
+  final String? slcmSessionId;
 
   @override
   State<KonfirmasiSemesterPage> createState() => _KonfirmasiSemesterPageState();
@@ -16,6 +21,15 @@ class KonfirmasiSemesterPage extends StatefulWidget {
 
 class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
   late List<CourseModel> _courses;
+
+  /// Only ever set by the SLCM branch. Manual fill leaves it false for the
+  /// life of the page, so its button behaves exactly as before.
+  bool _isSubmitting = false;
+
+  /// The import is atomic on the backend: confirm takes no body and imports
+  /// everything the scrape matched. The list is therefore read-only, and the
+  /// controls that would edit it are hidden rather than disabled.
+  bool get _isSlcmFlow => widget.slcmSessionId != null;
 
   @override
   void initState() {
@@ -38,9 +52,15 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
     Navigator.of(context).pop();
   }
 
-  void _onBuatSemester() async {
+  Future<void> _onBuatSemester() async {
     if (_courses.isEmpty) {
       ErrorMessenger('Daftar mata kuliah tidak boleh kosong').show(context);
+      return;
+    }
+
+    final slcmSessionId = widget.slcmSessionId;
+    if (slcmSessionId != null) {
+      await _confirmSlcmImport(slcmSessionId);
       return;
     }
 
@@ -58,6 +78,34 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
 
     // Navigate back to home calculator (main page)
     nav.popUntil(RouteName.mainPage);
+  }
+
+  /// The SLCM path. One call does the whole import server-side, so there is no
+  /// postSemester/postCalculator pair here — confirm creates the semester rows
+  /// itself from the preview it already holds.
+  Future<void> _confirmSlcmImport(String sessionId) async {
+    setState(() => _isSubmitting = true);
+    try {
+      await autoFillRM.state.confirm(sessionId);
+
+      // Refresh so Home and the calculator list show the imported semester.
+      await semesterRM.state.retrieveData();
+
+      if (!mounted) {
+        return;
+      }
+      SuccessMessenger('Semester berhasil dibuat dari SLCM').show(context);
+      nav.popUntil(RouteName.mainPage);
+    } on Failure catch (failure) {
+      if (!mounted) {
+        return;
+      }
+      // Left on the page so the student can retry without re-scraping.
+      setState(() => _isSubmitting = false);
+      ErrorMessenger(
+        failure.message ?? 'Gagal mengimpor mata kuliah dari SLCM.',
+      ).show(context);
+    }
   }
 
   @override
@@ -240,20 +288,24 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
               ],
             ),
           ),
-          const WidthSpace(8),
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _courses.remove(course);
-              });
-              // Keep state in sync in case user goes back
-              manualFillRM.state.unselect(course);
-            },
-            icon: const Icon(
-              Icons.delete_outline,
-              color: BaseColors.error,
+          // No per-course delete on the SLCM path: confirm imports the whole
+          // preview, so removing a row here would not stop it being imported.
+          if (!_isSlcmFlow) ...[
+            const WidthSpace(8),
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _courses.remove(course);
+                });
+                // Keep state in sync in case user goes back
+                manualFillRM.state.unselect(course);
+              },
+              icon: const Icon(
+                Icons.delete_outline,
+                color: BaseColors.error,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -274,30 +326,34 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
       ),
       child: Column(
         children: [
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              side: const BorderSide(color: Color(0xFF4921B8), width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          // Adding a course by hand has nowhere to go on the SLCM path — the
+          // import comes from the scrape, not from this list.
+          if (!_isSlcmFlow) ...[
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                side: const BorderSide(color: Color(0xFF4921B8), width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: _onTambahMatkul,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.add, color: Color(0xFF4921B8)),
+                  const WidthSpace(8),
+                  Text(
+                    'Tambah Matkul',
+                    style: FontTheme.poppins14w600black().copyWith(
+                      color: const Color(0xFF4921B8),
+                    ),
+                  ),
+                ],
               ),
             ),
-            onPressed: _onTambahMatkul,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.add, color: Color(0xFF4921B8)),
-                const WidthSpace(8),
-                Text(
-                  'Tambah Matkul',
-                  style: FontTheme.poppins14w600black().copyWith(
-                    color: const Color(0xFF4921B8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const HeightSpace(12),
+            const HeightSpace(12),
+          ],
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
@@ -306,13 +362,24 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            onPressed: _onBuatSemester,
-            child: Text(
-              'Buat Semester',
-              style: FontTheme.poppins14w700black().copyWith(
-                color: Colors.white,
-              ),
-            ),
+            // Null only while an SLCM confirm is in flight; manual fill never
+            // sets `_isSubmitting`, so its button is unchanged.
+            onPressed: _isSubmitting ? null : _onBuatSemester,
+            child: _isSubmitting
+                ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    'Buat Semester',
+                    style: FontTheme.poppins14w700black().copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ],
       ),
