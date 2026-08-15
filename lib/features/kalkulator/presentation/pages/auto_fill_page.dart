@@ -1,6 +1,10 @@
 part of '_pages.dart';
 
-/// Reviews the courses SIAK reports for a semester before they are imported.
+/// Reviews the courses SLCM reports for a semester before they are imported.
+///
+/// The list is read-only. The backend's confirm call imports everything in
+/// `preview.matched` and ignores any body, so offering a checkbox here would
+/// promise a choice the API cannot honour.
 class AutoFillPage extends StatefulWidget {
   const AutoFillPage({
     required this.givenSemester,
@@ -102,8 +106,10 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
               type: course.type,
               code: course.code,
               facultyName: course.facultyName,
-              isSelected: data.isSelected(course),
-              onTap: () => autoFillRM.state.toggle(course),
+              // Locked on, and no `onTap` — the confirm endpoint imports every
+              // matched course and accepts no selection, so a togglable box
+              // would let the student uncheck a row that is imported anyway.
+              isSelected: true,
             ),
           ),
         ),
@@ -111,8 +117,8 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     );
   }
 
-  /// Reports what SIAK found. The count stays put when rows are unchecked —
-  /// it describes the import, not the current selection.
+  /// Reports what SLCM found. Every row is imported, so this count and the
+  /// `dipilih` count beside the list always agree.
   Widget _buildSummaryCard(AutoFillState data) {
     return Container(
       width: double.infinity,
@@ -147,18 +153,12 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${data.totalFound} Matkul ditemukan dari SIAK',
+                  '${data.totalFound} Matkul ditemukan dari SLCM',
                   style: FontTheme.poppins16w700white(),
                 ),
                 const HeightSpace(6),
                 Text(
                   academicTermLabel(widget.givenSemester, _userGeneration),
-                  style: FontTheme.poppins12w400black().copyWith(
-                    color: BaseColors.white.withOpacity(0.9),
-                  ),
-                ),
-                Text(
-                  'Uncheck jika ada yang di-drop',
                   style: FontTheme.poppins12w400black().copyWith(
                     color: BaseColors.white.withOpacity(0.9),
                   ),
@@ -183,7 +183,8 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
               text: 'Lanjut Review',
               backgroundColor: BaseColors.purpleHearth,
               textStyle: FontTheme.poppins14w700white(),
-              // Nothing to review when every course has been unchecked.
+              // Selection is locked on, so this only guards the empty case:
+              // SLCM matched nothing, and there is nothing to import.
               onTap: hasSelection ? _goToReview : null,
             ),
           ),
@@ -197,7 +198,7 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Text(
-          'Gagal mengambil data dari SIAK.',
+          'Gagal mengambil data dari SLCM.',
           style: FontTheme.poppins12w400black().copyWith(
             color: BaseColors.gray2,
           ),

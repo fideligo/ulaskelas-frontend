@@ -8,6 +8,14 @@ class EndpointsRevamp {
   static final components = '$baseUrl/api/course-component';
   static final subcomponents = '$baseUrl/api/course-subcomponent';
   static final autofill = '$baseUrl/api/calculator-gpa?is_auto_fill=true';
+
+  // SLCM autofill — session-based remote-browser flow.
+  static final slcmAutofillSessions = '$baseUrl/api/slcm-autofill/sessions';
+  static String slcmAutofillSession(String sessionId) =>
+      '$baseUrl/api/slcm-autofill/sessions/$sessionId';
+  static String slcmAutofillConfirm(String sessionId) =>
+      '${slcmAutofillSession(sessionId)}/confirm';
+
   static final tanyaTeman = '$baseUrl/api/tanya-teman';
   static final jawabTeman = '$baseUrl/api/jawab-teman';
   static final likePost = '$baseUrl/api/tanya-teman?is_like=true';

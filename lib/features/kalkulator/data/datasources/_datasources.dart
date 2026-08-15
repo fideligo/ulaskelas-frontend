@@ -8,7 +8,9 @@ import '../../domain/entities/query_semester.dart';
 import '../models/calculator_model.dart';
 import '../models/component_model.dart';
 import '../models/semester_model.dart';
+import '../models/slcm_session_model.dart';
 
 part 'calculator_remote_data_source.dart';
 part 'component_remote_data_source.dart';
 part 'semester_remote_data_source.dart';
+part 'slcm_autofill_remote_data_source.dart';
