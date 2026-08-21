@@ -9,8 +9,10 @@ class AddSemesterPage extends StatefulWidget {
 
 class _AddSemesterPageState extends State<AddSemesterPage> {
   final userGen = int.tryParse(profileRM.state.profile.generation ?? '') ?? 0;
-  List<String> _selectableSemester = [];
-  String? _selectedSemester;
+
+  /// Semesters the student has not created yet, in offer order. Autofill picks
+  /// its own target out of this; manual fill hands it to the picker sheet.
+  final List<String> _selectableSemester = [];
 
   @override
   void initState() {
@@ -50,32 +52,50 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
     }
   }
 
-  String _formatSemesterDisplay(String semester) {
-    if (!semester.contains('sp')) {
-      return 'Semester $semester';
+  /// The semester an autofill run writes into.
+  ///
+  /// The student is no longer asked: SLCM decides which period it scrapes, so
+  /// this takes the earliest regular semester they have not created yet, which
+  /// is the one a current IRS lines up with. Short semesters are skipped —
+  /// those are a deliberate choice, and manual fill still offers them.
+  ///
+  /// Null once every regular semester exists, which is the only case left that
+  /// autofill cannot pick a target for.
+  String? get _autoFillSemester {
+    for (final semester in _selectableSemester) {
+      if (!semester.contains('sp')) {
+        return semester;
+      }
     }
-    final yearStr = semester.split('_').last;
-    final year = int.tryParse(yearStr) ?? 0;
-    if (year < 100) {
-      return 'Semester Pendek 20${year.toString().padLeft(2, '0')}';
-    }
-    return 'Semester Pendek $year';
+    return null;
   }
 
   void _onAutoFillPressed() {
-    if (_selectedSemester == null) {
-      WarningMessenger('Pilih semester terlebih dahulu').show(context);
+    final semester = _autoFillSemester;
+    if (semester == null) {
+      WarningMessenger('Semua semester reguler sudah ditambahkan')
+          .show(context);
       return;
     }
-    nav.goToAutoFillPage(_selectedSemester!);
+    nav.goToAutoFillPage(semester);
   }
 
-  void _onManualFillPressed() {
-    if (_selectedSemester == null) {
-      WarningMessenger('Pilih semester terlebih dahulu').show(context);
+  Future<void> _onManualFillPressed() async {
+    if (_selectableSemester.isEmpty) {
+      WarningMessenger('Semua semester sudah ditambahkan').show(context);
       return;
     }
-    nav.goToManualFillPage(_selectedSemester!);
+    final semester = await SemesterPickerSheet.show(
+      context,
+      semesters: _selectableSemester,
+    );
+    // Dismissed without choosing — stay on this page.
+    if (semester == null) {
+      return;
+    }
+    // `nav` routes off a global navigator key, so no BuildContext is read
+    // across the await above.
+    await nav.goToManualFillPage(semester);
   }
 
   @override
@@ -121,98 +141,6 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Semester',
-              style: FontTheme.poppins14w700black().copyWith(
-                fontSize: 15,
-              ),
-            ),
-            const HeightSpace(8),
-            DropdownButtonFormField2<String>(
-              isExpanded: true,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.only(
-                  left: 3,
-                  right: 16,
-                  top: 12,
-                  bottom: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: BaseColors.gray2, width: 2),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: BaseColors.gray2, width: 2),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: BaseColors.gray2, width: 2),
-                ),
-                filled: true,
-                fillColor: BaseColors.white,
-              ),
-              dropdownStyleData: DropdownStyleData(
-                maxHeight: 250,
-                elevation: 0,
-                offset: const Offset(0, -4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: BaseColors.gray2, width: 2),
-                  color: BaseColors.white,
-                ),
-                scrollbarTheme: ScrollbarThemeData(
-                  radius: const Radius.circular(40),
-                  thickness: MaterialStateProperty.all(6),
-                  thumbVisibility: MaterialStateProperty.all(true),
-                  thumbColor: MaterialStateProperty.all(BaseColors.gray2),
-                  crossAxisMargin: 8,
-                  mainAxisMargin: 8,
-                ),
-              ),
-              hint: Text(
-                'Pilih Semester',
-                style: FontTheme.poppins12w400black().copyWith(
-                  color: BaseColors.gray2,
-                  fontSize: 14,
-                ),
-              ),
-              iconStyleData: const IconStyleData(
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: BaseColors.purpleHearth,
-                ),
-                openMenuIcon: Icon(
-                  Icons.keyboard_arrow_up_rounded,
-                  color: BaseColors.purpleHearth,
-                ),
-              ),
-              menuItemStyleData: const MenuItemStyleData(
-                height: 48,
-                padding: EdgeInsets.symmetric(horizontal: 16),
-              ),
-              value: _selectedSemester,
-              items: _selectableSemester.map((String semester) {
-                return DropdownMenuItem<String>(
-                  value: semester,
-                  child: Text(
-                    _formatSemesterDisplay(semester),
-                    style: FontTheme.poppins12w400black().copyWith(
-                      fontSize: 14,
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedSemester = newValue;
-                });
-              },
-            ),
-            const HeightSpace(24),
             _buildAutoFillCard(),
             const HeightSpace(22),
             _buildManualFillCard(),
