@@ -2,9 +2,14 @@ part of '_pages.dart';
 
 /// Reviews the courses SLCM reports for a semester before they are imported.
 ///
-/// The list is read-only. The backend's confirm call imports everything in
-/// `preview.matched` and ignores any body, so offering a checkbox here would
-/// promise a choice the API cannot honour.
+/// `preview.matched` is what gets imported and each row can be dropped from
+/// the list; `preview.duplicates` is already in the semester, so it is shown
+/// greyed out with no control on it at all.
+///
+/// Dropping a row is local for now: the confirm call takes no body and the
+/// backend imports the whole preview regardless. `AutoFillState` tracks the
+/// removals in `excludedCourseCodes`, ready to send once the endpoint accepts
+/// them.
 class AutoFillPage extends StatefulWidget {
   const AutoFillPage({
     required this.givenSemester,
@@ -106,28 +111,90 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
           ],
         ),
         const HeightSpace(14),
-        ...data.courses.map(
-          (course) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: CourseChecklistCard(
-              name: course.name,
-              sks: course.sks,
-              type: course.type,
-              code: course.code,
-              facultyName: course.facultyName,
-              // Locked on, and no `onTap` — the confirm endpoint imports every
-              // matched course and accepts no selection, so a togglable box
-              // would let the student uncheck a row that is imported anyway.
-              isSelected: true,
+        if (data.selectedCourses.isEmpty)
+          _buildEmptyMatched()
+        else
+          ...data.selectedCourses.map(
+            (course) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: CourseChecklistCard(
+                name: course.name,
+                sks: course.sks,
+                type: course.type,
+                code: course.code,
+                facultyName: course.facultyName,
+                // Ticked with no `onTap`: a row is either on the list or off
+                // it, and the trash button is the only way off.
+                isSelected: true,
+                onDelete: () => autoFillRM.state.remove(course),
+              ),
             ),
           ),
-        ),
+        ..._buildDuplicateSection(data),
       ],
     );
   }
 
-  /// Reports what SLCM found. Every row is imported, so this count and the
-  /// `dipilih` count beside the list always agree.
+  /// Reachable by removing every row, so it explains the way back rather than
+  /// leaving a gap under the heading.
+  Widget _buildEmptyMatched() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        'Semua matkul sudah dihapus dari daftar. Kembali dan ulangi '
+        'pengambilan data jika ingin menambahkannya lagi.',
+        style: FontTheme.poppins12w400black().copyWith(
+          color: BaseColors.gray2,
+        ),
+      ),
+    );
+  }
+
+  /// Courses SLCM found that are already in this semester.
+  ///
+  /// Listed so the student can see nothing was silently dropped, and drawn
+  /// inert because the import skips them either way — there is no removal to
+  /// offer on a row that was never going to be written.
+  List<Widget> _buildDuplicateSection(AutoFillState data) {
+    final duplicates = data.duplicateCourses;
+    if (duplicates.isEmpty) {
+      return [];
+    }
+    return [
+      const HeightSpace(10),
+      Text(
+        'Sudah ada di semester ini (${duplicates.length})',
+        style: FontTheme.poppins14w700black().copyWith(
+          color: BaseColors.gray2,
+        ),
+      ),
+      const HeightSpace(4),
+      Text(
+        'Matkul ini tidak akan ditambahkan lagi.',
+        style: FontTheme.poppins12w400black().copyWith(
+          color: BaseColors.gray2,
+        ),
+      ),
+      const HeightSpace(14),
+      ...duplicates.map(
+        (course) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: CourseChecklistCard(
+            name: course.name,
+            sks: course.sks,
+            type: course.type,
+            code: course.code,
+            facultyName: course.facultyName,
+            isSelected: false,
+            isDisabled: true,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  /// Reports what SLCM matched, before any removal. The `dipilih` count
+  /// beside the list falls below this as rows are dropped.
   Widget _buildSummaryCard(AutoFillState data) {
     return Container(
       width: double.infinity,
@@ -192,8 +259,8 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
               text: 'Lanjut Review',
               backgroundColor: BaseColors.purpleHearth,
               textStyle: FontTheme.poppins14w700white(),
-              // Selection is locked on, so this only guards the empty case:
-              // SLCM matched nothing, and there is nothing to import.
+              // Guards the empty case: SLCM matched nothing, or the student
+              // removed every row, so there is nothing to review.
               onTap: hasSelection ? _goToReview : null,
             ),
           ),

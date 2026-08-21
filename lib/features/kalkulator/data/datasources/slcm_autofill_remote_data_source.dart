@@ -61,6 +61,12 @@ class SlcmAutofillRemoteDataSourceImpl implements SlcmAutofillRemoteDataSource {
   /// ignores anything sent. Idempotent — confirming an already-imported
   /// session returns 200 rather than importing twice.
   ///
+  /// The review step lets the student remove courses and
+  /// `AutoFillState.excludedCourseCodes` names them, but nothing is posted
+  /// here yet — `slcm_autofill_confirm` reads no request body, so sending one
+  /// would only look like the exclusion worked. Add
+  /// `model: {'excluded_course_codes': ...}` once the endpoint honours it.
+  ///
   /// Given a longer receive window than the 5s default because this is the one
   /// call that does real work before answering: the import walks every matched
   /// course inside a single transaction, writing a `Calculator`, a

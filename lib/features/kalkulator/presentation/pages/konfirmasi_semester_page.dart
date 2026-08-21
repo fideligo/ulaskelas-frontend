@@ -26,9 +26,9 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
   /// life of the page, so its button behaves exactly as before.
   bool _isSubmitting = false;
 
-  /// The import is atomic on the backend: confirm takes no body and imports
-  /// everything the scrape matched. The list is therefore read-only, and the
-  /// controls that would edit it are hidden rather than disabled.
+  /// Splits the two ways onto this page. Adding a course by hand still has
+  /// nowhere to go on the SLCM path, and removing one is recorded back on
+  /// `AutoFillState` instead of the manual-fill basket.
   bool get _isSlcmFlow => widget.slcmSessionId != null;
 
   @override
@@ -50,6 +50,26 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
 
   void _onTambahMatkul() {
     Navigator.of(context).pop();
+  }
+
+  /// Drops a course from the list about to be submitted.
+  ///
+  /// The removal is mirrored onto whichever state fed this page so going back
+  /// a step shows the same list, not the one from before the deletion.
+  ///
+  /// On the SLCM path this is presentational until the backend accepts an
+  /// exclusion payload: confirm imports every course the scrape matched, so a
+  /// course removed here is still written. See
+  /// `slcm_autofill_remote_data_source.dart`.
+  void _onDeleteCourse(CourseModel course) {
+    setState(() {
+      _courses.remove(course);
+    });
+    if (_isSlcmFlow) {
+      autoFillRM.state.removeById(course.id);
+      return;
+    }
+    manualFillRM.state.unselect(course);
   }
 
   Future<void> _onBuatSemester() async {
@@ -288,24 +308,14 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
               ],
             ),
           ),
-          // No per-course delete on the SLCM path: confirm imports the whole
-          // preview, so removing a row here would not stop it being imported.
-          if (!_isSlcmFlow) ...[
-            const WidthSpace(8),
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _courses.remove(course);
-                });
-                // Keep state in sync in case user goes back
-                manualFillRM.state.unselect(course);
-              },
-              icon: const Icon(
-                Icons.delete_outline,
-                color: BaseColors.error,
-              ),
+          const WidthSpace(8),
+          IconButton(
+            onPressed: () => _onDeleteCourse(course),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: BaseColors.error,
             ),
-          ],
+          ),
         ],
       ),
     );

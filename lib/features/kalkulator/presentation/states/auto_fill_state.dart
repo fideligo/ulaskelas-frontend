@@ -8,9 +8,10 @@ part of '_states.dart';
 /// settled state, which keeps `OnBuilder` on the waiting view for the whole
 /// login and routes a failure to the error view.
 ///
-/// Selection is read-only by design: the confirm endpoint imports everything
-/// in `preview.matched` and ignores any body, so [toggle] is deliberately not
-/// wired to the UI. See `auto_fill_page.dart`.
+/// Everything `preview.matched` holds starts kept, and [remove] drops a row
+/// the student does not want. That choice is local for now: the confirm
+/// endpoint takes no body and imports the whole preview, so [excludedCourses]
+/// is tracked and ready but nothing sends it yet. See `auto_fill_page.dart`.
 class AutoFillState implements FutureState<AutoFillState, String> {
   AutoFillState() {
     _repo = SlcmAutofillRepositoryImpl(SlcmAutofillRemoteDataSourceImpl());
@@ -24,6 +25,10 @@ class AutoFillState implements FutureState<AutoFillState, String> {
   late final SlcmAutofillRepository _repo;
 
   List<SiakCourseModel>? _courses;
+
+  /// Held apart from [_courses] because the import skips these: they are shown
+  /// so the student can see SLCM found them, and nothing more.
+  List<SiakCourseModel>? _duplicates;
 
   /// Held by identity rather than course code so a duplicated code in the
   /// SLCM response cannot make two rows toggle together.
@@ -43,7 +48,12 @@ class AutoFillState implements FutureState<AutoFillState, String> {
   /// Whether the login WebView was pushed and has not been closed from here.
   bool _loginPageOpen = false;
 
+  /// Every course SLCM matched, including the ones the student has removed.
   List<SiakCourseModel> get courses => _courses ?? [];
+
+  /// Courses already in this semester's calculator. Never importable, so they
+  /// are drawn greyed out and cannot be removed.
+  List<SiakCourseModel> get duplicateCourses => _duplicates ?? [];
 
   String? get givenSemester => _givenSemester;
 
@@ -72,6 +82,21 @@ class AutoFillState implements FutureState<AutoFillState, String> {
   /// Still in SLCM's order, not selection order.
   List<SiakCourseModel> get selectedCourses =>
       courses.where(_selected.contains).toList();
+
+  /// Courses the student removed from the preview.
+  ///
+  /// Populated and kept correct so the confirm call can start sending it the
+  /// moment the backend grows an `excluded_course_codes` payload. Until then
+  /// nothing reads it over the wire and the import still takes every matched
+  /// course — see `slcm_autofill_remote_data_source.dart`.
+  List<SiakCourseModel> get excludedCourses =>
+      courses.where((course) => !_selected.contains(course)).toList();
+
+  /// [excludedCourses] as the codes a future confirm payload would carry.
+  List<String> get excludedCourseCodes => excludedCourses
+      .map((course) => course.code)
+      .whereType<String>()
+      .toList();
 
   bool isSelected(SiakCourseModel course) => _selected.contains(course);
 
@@ -187,6 +212,30 @@ class AutoFillState implements FutureState<AutoFillState, String> {
     );
   }
 
+  /// Drops one matched course from the list the review step is handed.
+  ///
+  /// Kept in [courses] so [excludedCourses] can still name it; only the
+  /// selection loses it.
+  void remove(SiakCourseModel course) {
+    if (_selected.remove(course)) {
+      autoFillRM.notify();
+    }
+  }
+
+  /// [remove] by local `Course.id`, for callers holding a `CourseModel` that
+  /// was mapped out of this state rather than the [SiakCourseModel] itself.
+  void removeById(int? id) {
+    if (id == null) {
+      return;
+    }
+    final match = _selected.where((course) => course.id == id).toList();
+    if (match.isEmpty) {
+      return;
+    }
+    _selected.removeAll(match);
+    autoFillRM.notify();
+  }
+
   void toggle(SiakCourseModel course) {
     if (!_selected.remove(course)) {
       _selected.add(course);
@@ -225,7 +274,8 @@ class AutoFillState implements FutureState<AutoFillState, String> {
       _preview = session.preview;
       final courses = _mapMatched(session.preview);
       _courses = courses;
-      // Everything SLCM matched is imported; the student cannot deselect.
+      _duplicates = _mapDuplicates(session.preview);
+      // Everything SLCM matched starts kept; [remove] takes rows back out.
       _selected
         ..clear()
         ..addAll(courses);
@@ -244,8 +294,20 @@ class AutoFillState implements FutureState<AutoFillState, String> {
   }
 
   List<SiakCourseModel> _mapMatched(SlcmPreviewModel? preview) {
-    final matched = preview?.matched ?? const <SlcmPreviewCourseModel>[];
-    return matched
+    return _mapPreviewCourses(preview?.matched);
+  }
+
+  List<SiakCourseModel> _mapDuplicates(SlcmPreviewModel? preview) {
+    return _mapPreviewCourses(preview?.duplicates);
+  }
+
+  /// `matched` and `duplicates` carry the same shape, so one mapping serves
+  /// both.
+  List<SiakCourseModel> _mapPreviewCourses(
+    List<SlcmPreviewCourseModel>? preview,
+  ) {
+    final courses = preview ?? const <SlcmPreviewCourseModel>[];
+    return courses
         .map(
           (course) => SiakCourseModel(
             id: course.id,
@@ -322,6 +384,7 @@ class AutoFillState implements FutureState<AutoFillState, String> {
     _loginPageOpen = false;
     _settled = null;
     _courses = null;
+    _duplicates = null;
     _selected.clear();
     _sessionId = null;
     _preview = null;
