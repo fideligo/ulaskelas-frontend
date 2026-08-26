@@ -10,8 +10,9 @@ class AddSemesterPage extends StatefulWidget {
 class _AddSemesterPageState extends State<AddSemesterPage> {
   final userGen = int.tryParse(profileRM.state.profile.generation ?? '') ?? 0;
 
-  /// Semesters the student has not created yet, in offer order. Autofill picks
-  /// its own target out of this; manual fill hands it to the picker sheet.
+  /// Semesters the student has not created yet, in offer order. Manual fill
+  /// hands this to the picker sheet; autofill no longer reads it, since the
+  /// backend decides which semester a scrape writes into.
   final List<String> _selectableSemester = [];
 
   @override
@@ -52,32 +53,15 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
     }
   }
 
-  /// The semester an autofill run writes into.
+  /// Starts an autofill run.
   ///
-  /// The student is no longer asked: SLCM decides which period it scrapes, so
-  /// this takes the earliest regular semester they have not created yet, which
-  /// is the one a current IRS lines up with. Short semesters are skipped —
-  /// those are a deliberate choice, and manual fill still offers them.
-  ///
-  /// Null once every regular semester exists, which is the only case left that
-  /// autofill cannot pick a target for.
-  String? get _autoFillSemester {
-    for (final semester in _selectableSemester) {
-      if (!semester.contains('sp')) {
-        return semester;
-      }
-    }
-    return null;
-  }
-
+  /// Nothing is picked here any more. The app used to guess the target as the
+  /// earliest regular semester the student had not created yet; the backend
+  /// now derives it from their NPM entry year and the running academic period
+  /// and returns it on the session, so the guess — and the guard that refused
+  /// to start once every regular semester existed — are both gone.
   void _onAutoFillPressed() {
-    final semester = _autoFillSemester;
-    if (semester == null) {
-      WarningMessenger('Semua semester reguler sudah ditambahkan')
-          .show(context);
-      return;
-    }
-    nav.goToAutoFillPage(semester);
+    nav.goToAutoFillPage();
   }
 
   Future<void> _onManualFillPressed() async {

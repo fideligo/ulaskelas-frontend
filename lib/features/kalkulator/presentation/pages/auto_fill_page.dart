@@ -2,6 +2,10 @@ part of '_pages.dart';
 
 /// Reviews the courses SLCM reports for a semester before they are imported.
 ///
+/// Takes no semester: the backend derives it from the student's NPM when the
+/// session opens and returns it on the session, so every label here reads it
+/// off `AutoFillState.givenSemester` once the create call answers.
+///
 /// `preview.matched` is what gets imported and each row can be dropped from
 /// the list; `preview.duplicates` is already in the semester, so it is shown
 /// greyed out with no control on it at all.
@@ -11,12 +15,7 @@ part of '_pages.dart';
 /// removals in `excludedCourseCodes`, ready to send once the endpoint accepts
 /// them.
 class AutoFillPage extends StatefulWidget {
-  const AutoFillPage({
-    required this.givenSemester,
-    super.key,
-  });
-
-  final String givenSemester;
+  const AutoFillPage({super.key});
 
   @override
   _AutoFillPageState createState() => _AutoFillPageState();
@@ -28,7 +27,7 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
 
   @override
   void init() {
-    autoFillRM.setState((s) => s.retrieveData(widget.givenSemester));
+    autoFillRM.setState((s) => s.retrieveData());
   }
 
   @override
@@ -47,13 +46,34 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     );
   }
 
+  /// The semester the backend picked, e.g. `Semester 9`.
+  ///
+  /// Falls back to a semester-less title for the stretch before the create
+  /// call answers, which is the only time the page does not know it yet.
+  String get _semesterLabel {
+    final givenSemester = autoFillRM.state.givenSemester;
+    if (givenSemester == null || givenSemester.isEmpty) {
+      return 'Isi Otomatis';
+    }
+    return semesterFullLabel(givenSemester);
+  }
+
+  /// Wrapped in an `OnBuilder` because the scaffold builds its app bar outside
+  /// the body's, so the title would otherwise keep the placeholder it was
+  /// given before the session reported which semester this is.
   @override
   PreferredSizeWidget? buildAppBar(BuildContext context) {
-    return BaseAppBar(
-      label: semesterFullLabel(widget.givenSemester),
-      centerTitle: false,
-      elevation: 0,
-      style: FontTheme.poppins18w700black(),
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: OnBuilder(
+        listenTo: autoFillRM,
+        builder: () => BaseAppBar(
+          label: _semesterLabel,
+          centerTitle: false,
+          elevation: 0,
+          style: FontTheme.poppins18w700black(),
+        ),
+      ),
     );
   }
 
@@ -97,7 +117,7 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
           children: [
             Expanded(
               child: Text(
-                'Matkul ${semesterFullLabel(widget.givenSemester)}',
+                'Matkul ${semesterFullLabel(data.givenSemester ?? '')}',
                 style: FontTheme.poppins14w700black(),
               ),
             ),
@@ -234,7 +254,7 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
                 ),
                 const HeightSpace(6),
                 Text(
-                  academicTermLabel(widget.givenSemester, _userGeneration),
+                  academicTermLabel(data.givenSemester ?? '', _userGeneration),
                   style: FontTheme.poppins12w400black().copyWith(
                     color: BaseColors.white.withOpacity(0.9),
                   ),
@@ -348,7 +368,9 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
       // Puts the review step on the SLCM branch: it confirms the session
       // server-side instead of posting the course list itself.
       slcmSessionId: autoFillRM.state.sessionId,
-      givenSemester: widget.givenSemester,
+      // Carried as the fallback only; on this branch the review page reads the
+      // live value off `AutoFillState` so the two cannot drift.
+      givenSemester: autoFillRM.state.givenSemester ?? '',
       courses: autoFillRM.state.selectedCourses
           .map(
             (c) => CourseModel(

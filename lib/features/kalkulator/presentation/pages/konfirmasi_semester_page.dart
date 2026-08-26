@@ -44,8 +44,24 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
   int get _userGeneration =>
       int.tryParse(profileRM.state.profile.generation ?? '') ?? 0;
 
+  /// The semester this page is about to write into.
+  ///
+  /// On the SLCM branch the student never chose one — the backend derived it
+  /// from their NPM when the session opened and returned it on the session —
+  /// so it is read live off `AutoFillState` rather than trusted from the
+  /// constructor. Manual fill still uses the semester the picker handed over.
+  String get _givenSemester {
+    if (_isSlcmFlow) {
+      final fromSession = autoFillRM.state.givenSemester;
+      if (fromSession != null && fromSession.isNotEmpty) {
+        return fromSession;
+      }
+    }
+    return widget.givenSemester;
+  }
+
   String _getSemesterPill() {
-    return academicTermLabel(widget.givenSemester, _userGeneration);
+    return academicTermLabel(_givenSemester, _userGeneration);
   }
 
   void _onTambahMatkul() {
@@ -85,10 +101,10 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
     }
 
     // First create the semester if it doesn't exist yet
-    await semesterRM.state.postSemester([widget.givenSemester]);
+    await semesterRM.state.postSemester([_givenSemester]);
 
     // Then add the selected courses to it
-    await calculatorRM.state.postCalculator(_courses, widget.givenSemester);
+    await calculatorRM.state.postCalculator(_courses, _givenSemester);
 
     // Clear the manual-fill basket so it's fresh next time
     manualFillRM.state.reset();
@@ -213,7 +229,7 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                semesterFullLabel(widget.givenSemester),
+                semesterFullLabel(_givenSemester),
                 style: FontTheme.poppins16w700black().copyWith(
                   color: Colors.white,
                   fontSize: 18,

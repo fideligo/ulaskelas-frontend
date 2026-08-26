@@ -7,7 +7,7 @@ part of '_datasources.dart';
 /// `SESSION_ALREADY_ACTIVE` or `BROWSER_BUSY` rather than queueing. Cancel a
 /// session the student abandons instead of leaving it to time out.
 abstract class SlcmAutofillRemoteDataSource {
-  Future<Parsed<SlcmSessionModel>> createSession(String givenSemester);
+  Future<Parsed<SlcmSessionModel>> createSession();
 
   Future<Parsed<SlcmSessionModel>> getSession(String sessionId);
 
@@ -25,13 +25,20 @@ class SlcmAutofillRemoteDataSourceImpl implements SlcmAutofillRemoteDataSource {
   /// `waiting_login`. The scraper starts server-side straight away; nothing is
   /// scraped until the student finishes logging in through the popup.
   ///
-  /// [givenSemester] is the semester label as a string — `'1'`, not `1`.
+  /// Sends no `given_semester`: the backend now derives the student's current
+  /// semester from their NPM entry year and the running UI academic period,
+  /// and reports its choice back as `given_semester` on every response. The
+  /// app reads that rather than guessing a target of its own.
+  ///
+  /// The body is an empty object rather than nothing at all — `postIt` encodes
+  /// a null model as the literal `null`, which leaves the view with no map to
+  /// read the optional field off.
   @override
-  Future<Parsed<SlcmSessionModel>> createSession(String givenSemester) async {
+  Future<Parsed<SlcmSessionModel>> createSession() async {
     final url = EndpointsRevamp.slcmAutofillSessions;
     final resp = await postIt(
       url,
-      model: <String, dynamic>{'given_semester': givenSemester},
+      model: const <String, dynamic>{},
     );
     return resp.parse(SlcmSessionModel.fromJson(resp.dataBodyAsMap));
   }

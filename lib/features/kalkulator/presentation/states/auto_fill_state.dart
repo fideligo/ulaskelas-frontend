@@ -8,11 +8,16 @@ part of '_states.dart';
 /// settled state, which keeps `OnBuilder` on the waiting view for the whole
 /// login and routes a failure to the error view.
 ///
+/// [retrieveData] takes no semester. The backend works out which one the
+/// student is in from their NPM and hands it back on the session, so
+/// [givenSemester] is filled from the response rather than chosen here — see
+/// `slcm_autofill_remote_data_source.dart`.
+///
 /// Everything `preview.matched` holds starts kept, and [remove] drops a row
 /// the student does not want. That choice is local for now: the confirm
 /// endpoint takes no body and imports the whole preview, so [excludedCourses]
 /// is tracked and ready but nothing sends it yet. See `auto_fill_page.dart`.
-class AutoFillState implements FutureState<AutoFillState, String> {
+class AutoFillState implements FutureState<AutoFillState, void> {
   AutoFillState() {
     _repo = SlcmAutofillRepositoryImpl(SlcmAutofillRemoteDataSourceImpl());
   }
@@ -55,6 +60,10 @@ class AutoFillState implements FutureState<AutoFillState, String> {
   /// are drawn greyed out and cannot be removed.
   List<SiakCourseModel> get duplicateCourses => _duplicates ?? [];
 
+  /// The semester the backend picked for this session, e.g. `'9'`.
+  ///
+  /// Null until the create call answers; the review and confirmation screens
+  /// label themselves off it once it lands.
   String? get givenSemester => _givenSemester;
 
   /// The live session, needed by the confirm call. Null before the session is
@@ -107,11 +116,10 @@ class AutoFillState implements FutureState<AutoFillState, String> {
   bool getCondition() => _courses?.isNotEmpty ?? false;
 
   @override
-  Future<void> retrieveData(String givenSemester) async {
+  Future<void> retrieveData([void _]) async {
     _reset();
-    _givenSemester = givenSemester;
 
-    final created = await _repo.createSession(givenSemester);
+    final created = await _repo.createSession();
     final session = created.fold<SlcmSessionModel>(
       (failure) => throw failure,
       (result) => result.data,
@@ -123,6 +131,9 @@ class AutoFillState implements FutureState<AutoFillState, String> {
     }
     _sessionId = sessionId;
     _status = session.status;
+    // The semester the backend resolved off the student's NPM. Recorded here
+    // so the waiting view can already name it, ahead of the first poll.
+    _givenSemester = session.givenSemester;
 
     // Deliberately not awaited: the push completes only when the page is
     // popped, and the poll below has to run while the student is still logging
@@ -268,6 +279,9 @@ class AutoFillState implements FutureState<AutoFillState, String> {
 
   void _apply(SlcmSessionModel session) {
     _status = session.status;
+    // Echoed on every response. Held onto rather than overwritten blindly so a
+    // payload that omits it cannot blank out a label already on screen.
+    _givenSemester = session.givenSemester ?? _givenSemester;
 
     if (session.status == SlcmSessionStatus.ready ||
         session.status == SlcmSessionStatus.imported) {
@@ -386,6 +400,7 @@ class AutoFillState implements FutureState<AutoFillState, String> {
     _courses = null;
     _duplicates = null;
     _selected.clear();
+    _givenSemester = null;
     _sessionId = null;
     _preview = null;
     _status = SlcmSessionStatus.unknown;

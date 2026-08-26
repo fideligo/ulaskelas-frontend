@@ -225,9 +225,11 @@ class NavigationServiceState implements Navigation {
     );
   }
 
-  Future<void> goToAutoFillPage(String givenSemester) {
+  /// Opens the SLCM autofill flow. Takes no semester — the backend picks the
+  /// one the student is currently in and reports it back on the session.
+  Future<void> goToAutoFillPage() {
     return nav.push<void>(
-      AutoFillPage(givenSemester: givenSemester),
+      const AutoFillPage(),
       RouteName.autoFillPage,
     );
   }

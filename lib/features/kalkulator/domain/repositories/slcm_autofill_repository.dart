@@ -7,9 +7,7 @@ part of '_repositories.dart';
 /// turns a `DioException` into a `TimeoutFailure`/`NetworkFailure` and what
 /// forces the SSO redirect on a 403.
 abstract class SlcmAutofillRepository {
-  Future<Decide<Failure, Parsed<SlcmSessionModel>>> createSession(
-    String givenSemester,
-  );
+  Future<Decide<Failure, Parsed<SlcmSessionModel>>> createSession();
 
   Future<Decide<Failure, Parsed<SlcmSessionModel>>> getSession(
     String sessionId,
