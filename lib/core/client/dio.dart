@@ -23,10 +23,16 @@ Future<Response> getIt(
   return resp;
 }
 
+/// [receiveTimeout] and [sendTimeout] override the 5s/6s defaults for the rare
+/// endpoint that does real work before answering — the SLCM autofill confirm
+/// imports a whole IRS inside one transaction. Omitting them keeps the
+/// previous behaviour exactly, so existing callers are unaffected.
 Future<Response> postIt(
   String url, {
   Map<String, String>? headers,
   Map<String, dynamic>? model,
+  Duration? receiveTimeout,
+  Duration? sendTimeout,
 }) async {
   if (kDebugMode) {
     Logger().i({
@@ -41,8 +47,8 @@ Future<Response> postIt(
     data: json.encode(model),
     options: Options(
       headers: getHeaders,
-      receiveTimeout: const Duration(milliseconds: 5000),
-      sendTimeout: const Duration(milliseconds: 6000),
+      receiveTimeout: receiveTimeout ?? const Duration(milliseconds: 5000),
+      sendTimeout: sendTimeout ?? const Duration(milliseconds: 6000),
     ),
   );
   if (kDebugMode) {

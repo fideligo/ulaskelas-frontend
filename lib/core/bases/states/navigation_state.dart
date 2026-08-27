@@ -225,38 +225,47 @@ class NavigationServiceState implements Navigation {
     );
   }
 
-  Future<void> goToAutoFillPage(String givenSemester) {
+  /// Opens the SLCM autofill flow. Takes no semester — the backend picks the
+  /// one the student is currently in and reports it back on the session.
+  Future<void> goToAutoFillPage() {
     return nav.push<void>(
-      AutoFillPage(givenSemester: givenSemester),
+      const AutoFillPage(),
       RouteName.autoFillPage,
     );
   }
 
+  /// Opens the SLCM login WebView. The future completes when the page is
+  /// popped, so callers that need to keep working while the student logs in
+  /// must not await it.
+  Future<void> goToSlcmWebViewPage(String popupUrl) {
+    return nav.push<void>(
+      SlcmWebViewPage(popupUrl: popupUrl),
+      RouteName.slcmWebViewPage,
+    );
+  }
+
   Future<void> goToManualFillPage(String givenSemester) {
+    MixpanelService.track('calculator_add_course');
     return nav.push<void>(
       ManualFillPage(givenSemester: givenSemester),
       RouteName.manualFillPage,
     );
   }
 
+  /// [slcmSessionId] marks the SLCM autofill flow. Left null by manual fill,
+  /// which keeps the page on its existing behaviour.
   Future<void> goToConfirmSemesterPage({
     required String givenSemester,
-    required List<SiakCourseModel> courses,
+    required List<CourseModel> courses,
+    String? slcmSessionId,
   }) {
     return nav.push<void>(
-      ConfirmSemesterPage(
+      KonfirmasiSemesterPage(
         givenSemester: givenSemester,
-        courses: courses,
+        selectedCourses: courses,
+        slcmSessionId: slcmSessionId,
       ),
       RouteName.confirmSemesterPage,
-    );
-  }
-
-  Future<void> goToSearchCourseCalculatorPage(String givenSemester) {
-    MixpanelService.track('calculator_add_course');
-    return nav.push<void>(
-      SearchCourseCalculator(givenSemester: givenSemester),
-      RouteName.searchCourseCalculator,
     );
   }
 

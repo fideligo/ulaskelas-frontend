@@ -135,7 +135,8 @@ class SemesterState implements FutureState<SemesterState, void> {
   }) async {
     final resp = await _repo.deleteSemester(query);
     await resp.fold((failure) {
-      ErrorMessenger('Data Semester gagal dihapus').show(ctx!);
+      ErrorMessenger('Semester ${query.givenSemester} gagal dihapus')
+          .show(ctx!);
     }, (result) async {
       SuccessMessenger('Data Semester berhasil dihapus').show(ctx!);
       await _fetchSemesters();

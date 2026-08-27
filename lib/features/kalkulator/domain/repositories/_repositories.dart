@@ -7,7 +7,9 @@ import '../../../../core/error/_error.dart';
 import '../../../../core/extension/_extension.dart';
 import '../../data/models/component_model.dart';
 import '../../data/models/semester_model.dart';
+import '../../data/models/slcm_session_model.dart';
 
 part 'calculator_repository.dart';
 part 'component_repository.dart';
 part 'semester_repository.dart';
+part 'slcm_autofill_repository.dart';

@@ -1,6 +1,7 @@
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -9,6 +10,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 import 'package:ulaskelas/core/constants/_constants.dart';
 import 'package:ulaskelas/core/utils/util.dart';
+import 'package:ulaskelas/core/widgets/faculty_logo.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/component_breakdown.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/course_status.dart';
 import 'package:ulaskelas/features/kalkulator/domain/entities/grade_target.dart';
@@ -19,40 +21,31 @@ import 'package:ulaskelas/features/kalkulator/presentation/states/_states.dart';
 import 'package:ulaskelas/services/_services.dart';
 
 import '../../../../core/bases/states/_states.dart';
-import '../../../../core/error/_error.dart';
 import '../../../../core/theme/_theme.dart';
-import '../../../matkul/search/data/models/_models.dart';
-import '../../../matkul/search/presentation/states/_states.dart';
-import '../../../matkul/search/presentation/widgets/_widgets.dart';
 import '../../data/models/calculator_model.dart';
 import '../../data/models/semester_model.dart';
 
 part 'action_success_banner.dart';
-part 'add_semester_dialog.dart';
 part 'autofill_dialog.dart';
 part 'card_active_course.dart';
 part 'card_active_semester.dart';
 part 'card_calculator.dart';
 part 'card_component.dart';
 part 'card_component_expansion.dart';
-part 'card_course_simplified.dart';
 part 'card_expansion.dart';
-part 'card_fill_options.dart';
 part 'card_gpa_summary.dart';
 part 'card_past_semester.dart';
 part 'card_target_grade.dart';
 part 'course_checklist_card.dart';
 part 'custom_table_row.dart';
 part 'delete_dialog.dart';
-part 'fill_method_placeholder.dart';
 part 'frequency_controller.dart';
-part 'gradient_border_button.dart';
 part 'gradient_text.dart';
 part 'info_pill.dart';
 part 'komponen_bottom_sheet.dart';
 part 'recommended_score_box.dart';
 part 'scores_field_input.dart';
-part 'search_list_view_simplified.dart';
+part 'semester_picker_sheet.dart';
 part 'setup_bobot_reminder_card.dart';
 part 'selected_course_pill.dart';
 part 'simpan_button.dart';

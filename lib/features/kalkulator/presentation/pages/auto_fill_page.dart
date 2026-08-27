@@ -1,13 +1,21 @@
 part of '_pages.dart';
 
-/// Reviews the courses SIAK reports for a semester before they are imported.
+/// Reviews the courses SLCM reports for a semester before they are imported.
+///
+/// Takes no semester: the backend derives it from the student's NPM when the
+/// session opens and returns it on the session, so every label here reads it
+/// off `AutoFillState.givenSemester` once the create call answers.
+///
+/// `preview.matched` is what gets imported and each row can be dropped from
+/// the list; `preview.duplicates` is already in the semester, so it is shown
+/// greyed out with no control on it at all.
+///
+/// Dropping a row is local for now: the confirm call takes no body and the
+/// backend imports the whole preview regardless. `AutoFillState` tracks the
+/// removals in `excludedCourseCodes`, ready to send once the endpoint accepts
+/// them.
 class AutoFillPage extends StatefulWidget {
-  const AutoFillPage({
-    required this.givenSemester,
-    super.key,
-  });
-
-  final String givenSemester;
+  const AutoFillPage({super.key});
 
   @override
   _AutoFillPageState createState() => _AutoFillPageState();
@@ -19,7 +27,16 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
 
   @override
   void init() {
-    autoFillRM.setState((s) => s.retrieveData(widget.givenSemester));
+    autoFillRM.setState((s) => s.retrieveData());
+  }
+
+  @override
+  void dispose() {
+    // Stops the poll timer and hands the shared SLCM browser back. The backend
+    // allows one live session at a time, so leaving on an unfinished session
+    // would lock the student out of their next attempt until it times out.
+    unawaited(autoFillRM.state.cancel());
+    super.dispose();
   }
 
   @override
@@ -29,13 +46,34 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     );
   }
 
+  /// The semester the backend picked, e.g. `Semester 9`.
+  ///
+  /// Falls back to a semester-less title for the stretch before the create
+  /// call answers, which is the only time the page does not know it yet.
+  String get _semesterLabel {
+    final givenSemester = autoFillRM.state.givenSemester;
+    if (givenSemester == null || givenSemester.isEmpty) {
+      return 'Isi Otomatis';
+    }
+    return semesterFullLabel(givenSemester);
+  }
+
+  /// Wrapped in an `OnBuilder` because the scaffold builds its app bar outside
+  /// the body's, so the title would otherwise keep the placeholder it was
+  /// given before the session reported which semester this is.
   @override
   PreferredSizeWidget? buildAppBar(BuildContext context) {
-    return BaseAppBar(
-      label: semesterFullLabel(widget.givenSemester),
-      centerTitle: false,
-      elevation: 0,
-      style: FontTheme.poppins18w700black(),
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: OnBuilder(
+        listenTo: autoFillRM,
+        builder: () => BaseAppBar(
+          label: _semesterLabel,
+          centerTitle: false,
+          elevation: 0,
+          style: FontTheme.poppins18w700black(),
+        ),
+      ),
     );
   }
 
@@ -44,9 +82,9 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     return SafeArea(
       child: OnBuilder<AutoFillState>.all(
         listenTo: autoFillRM,
-        onIdle: WaitingView.new,
-        onWaiting: WaitingView.new,
-        onError: (dynamic error, refresh) => _buildError(),
+        onIdle: _buildWaiting,
+        onWaiting: _buildWaiting,
+        onError: (dynamic error, refresh) => _buildError(error),
         onData: _buildCourseList,
       ),
     );
@@ -79,7 +117,7 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
           children: [
             Expanded(
               child: Text(
-                'Matkul ${semesterFullLabel(widget.givenSemester)}',
+                'Matkul ${semesterFullLabel(data.givenSemester ?? '')}',
                 style: FontTheme.poppins14w700black(),
               ),
             ),
@@ -93,25 +131,90 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
           ],
         ),
         const HeightSpace(14),
-        ...data.courses.map(
-          (course) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: CourseChecklistCard(
-              name: course.name,
-              sks: course.sks,
-              type: course.type,
-              code: course.code,
-              isSelected: data.isSelected(course),
-              onTap: () => autoFillRM.state.toggle(course),
+        if (data.selectedCourses.isEmpty)
+          _buildEmptyMatched()
+        else
+          ...data.selectedCourses.map(
+            (course) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: CourseChecklistCard(
+                name: course.name,
+                sks: course.sks,
+                type: course.type,
+                code: course.code,
+                facultyName: course.facultyName,
+                // Ticked with no `onTap`: a row is either on the list or off
+                // it, and the trash button is the only way off.
+                isSelected: true,
+                onDelete: () => autoFillRM.state.remove(course),
+              ),
             ),
           ),
-        ),
+        ..._buildDuplicateSection(data),
       ],
     );
   }
 
-  /// Reports what SIAK found. The count stays put when rows are unchecked —
-  /// it describes the import, not the current selection.
+  /// Reachable by removing every row, so it explains the way back rather than
+  /// leaving a gap under the heading.
+  Widget _buildEmptyMatched() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        'Semua matkul sudah dihapus dari daftar. Kembali dan ulangi '
+        'pengambilan data jika ingin menambahkannya lagi.',
+        style: FontTheme.poppins12w400black().copyWith(
+          color: BaseColors.gray2,
+        ),
+      ),
+    );
+  }
+
+  /// Courses SLCM found that are already in this semester.
+  ///
+  /// Listed so the student can see nothing was silently dropped, and drawn
+  /// inert because the import skips them either way — there is no removal to
+  /// offer on a row that was never going to be written.
+  List<Widget> _buildDuplicateSection(AutoFillState data) {
+    final duplicates = data.duplicateCourses;
+    if (duplicates.isEmpty) {
+      return [];
+    }
+    return [
+      const HeightSpace(10),
+      Text(
+        'Sudah ada di semester ini (${duplicates.length})',
+        style: FontTheme.poppins14w700black().copyWith(
+          color: BaseColors.gray2,
+        ),
+      ),
+      const HeightSpace(4),
+      Text(
+        'Matkul ini tidak akan ditambahkan lagi.',
+        style: FontTheme.poppins12w400black().copyWith(
+          color: BaseColors.gray2,
+        ),
+      ),
+      const HeightSpace(14),
+      ...duplicates.map(
+        (course) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: CourseChecklistCard(
+            name: course.name,
+            sks: course.sks,
+            type: course.type,
+            code: course.code,
+            facultyName: course.facultyName,
+            isSelected: false,
+            isDisabled: true,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  /// Reports what SLCM matched, before any removal. The `dipilih` count
+  /// beside the list falls below this as rows are dropped.
   Widget _buildSummaryCard(AutoFillState data) {
     return Container(
       width: double.infinity,
@@ -146,18 +249,12 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${data.totalFound} Matkul ditemukan dari SIAK',
+                  '${data.totalFound} Matkul ditemukan dari SLCM',
                   style: FontTheme.poppins16w700white(),
                 ),
                 const HeightSpace(6),
                 Text(
-                  academicTermLabel(widget.givenSemester, _userGeneration),
-                  style: FontTheme.poppins12w400black().copyWith(
-                    color: BaseColors.white.withOpacity(0.9),
-                  ),
-                ),
-                Text(
-                  'Uncheck jika ada yang di-drop',
+                  academicTermLabel(data.givenSemester ?? '', _userGeneration),
                   style: FontTheme.poppins12w400black().copyWith(
                     color: BaseColors.white.withOpacity(0.9),
                   ),
@@ -182,7 +279,8 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
               text: 'Lanjut Review',
               backgroundColor: BaseColors.purpleHearth,
               textStyle: FontTheme.poppins14w700white(),
-              // Nothing to review when every course has been unchecked.
+              // Guards the empty case: SLCM matched nothing, or the student
+              // removed every row, so there is nothing to review.
               onTap: hasSelection ? _goToReview : null,
             ),
           ),
@@ -191,12 +289,71 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     );
   }
 
-  Widget _buildError() {
+  /// Held for as long as the student takes to log into SLCM, so it says which
+  /// half of the wait we are in rather than spinning mutely.
+  ///
+  /// Reads the status straight off the state: `AutoFillState._apply` calls
+  /// `autoFillRM.notify()` on every poll, which rebuilds this without leaving
+  /// the waiting branch.
+  Widget _buildWaiting() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              height: 28,
+              width: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: BaseColors.purpleHearth,
+              ),
+            ),
+            const HeightSpace(16),
+            Text(
+              _waitingLabel,
+              style: FontTheme.poppins14w400black().copyWith(
+                color: BaseColors.gray2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String get _waitingLabel {
+    switch (autoFillRM.state.status) {
+      case SlcmSessionStatus.waitingLogin:
+        return 'Menunggu Anda login di browser...';
+      case SlcmSessionStatus.scraping:
+        return 'Sedang mengambil data dari SLCM...';
+      // Reached only in the gap before the session exists, and briefly at
+      // `ready` before the waiting branch hands over to the list.
+      case SlcmSessionStatus.ready:
+      case SlcmSessionStatus.imported:
+      case SlcmSessionStatus.failed:
+      case SlcmSessionStatus.expired:
+      case SlcmSessionStatus.cancelled:
+      case SlcmSessionStatus.unknown:
+        return 'Memproses...';
+    }
+  }
+
+  /// Shows the reason the session ended when there is one — an expiry, a
+  /// scraper failure, or the student cancelling the login — and falls back to
+  /// the generic line otherwise.
+  Widget _buildError(dynamic error) {
+    final message = error is Failure ? error.message : null;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Text(
-          'Gagal mengambil data dari SIAK.',
+          message?.isNotEmpty ?? false
+              ? message!
+              : 'Gagal mengambil data dari SLCM.',
           style: FontTheme.poppins12w400black().copyWith(
             color: BaseColors.gray2,
           ),
@@ -208,8 +365,26 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
 
   void _goToReview() {
     nav.goToConfirmSemesterPage(
-      givenSemester: widget.givenSemester,
-      courses: autoFillRM.state.selectedCourses,
+      // Puts the review step on the SLCM branch: it confirms the session
+      // server-side instead of posting the course list itself.
+      slcmSessionId: autoFillRM.state.sessionId,
+      // Carried as the fallback only; on this branch the review page reads the
+      // live value off `AutoFillState` so the two cannot drift.
+      givenSemester: autoFillRM.state.givenSemester ?? '',
+      courses: autoFillRM.state.selectedCourses
+          .map(
+            (c) => CourseModel(
+              // The import posts ids; dropping it here makes the confirm step
+              // throw on `e.id!`.
+              id: c.id,
+              code: c.code,
+              name: c.name,
+              sks: c.sks,
+              codeDesc: c.type,
+              faculties: c.faculties,
+            ),
+          )
+          .toList(),
     );
   }
 }

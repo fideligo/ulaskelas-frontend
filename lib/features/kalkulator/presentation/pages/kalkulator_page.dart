@@ -27,7 +27,9 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
 
   @override
   ScaffoldAttribute buildAttribute() {
-    return ScaffoldAttribute();
+    return ScaffoldAttribute(
+      backgroundColor: BaseColors.white,
+    );
   }
 
   @override
@@ -91,6 +93,27 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
     }
   }
 
+  /// Refetch in place, without the [WaitingView] flash.
+  ///
+  /// [retrieveData] goes through `semesterRM.setState`, which flips the state
+  /// to waiting and swaps the whole dashboard for a spinner — fine for a
+  /// pull-to-refresh the user asked for, jarring on every back navigation.
+  /// [SemesterState.retrieveData] mutates in place and ends in `notify()`, so
+  /// the page rebuilds through `onData` with the new numbers already there.
+  Future<void> _silentRefresh() async {
+    try {
+      await semesterRM.state.retrieveData();
+    } on Exception catch (_) {
+      // Bypassing setState means bypassing onError too, so the throw from the
+      // Left branch has to be caught here or it escapes as an unhandled async
+      // error. The dashboard on screen is still valid — blanking it because a
+      // background refresh failed would be worse than leaving it stale.
+      if (mounted) {
+        ErrorMessenger('Gagal memperbarui data kalkulator').show(context);
+      }
+    }
+  }
+
   Future<void> showAutoFillSemesterDialog(BuildContext context) async {
     final availableSemesters = semesterRM.state.availableSemestersToFill;
     await showDialog(
@@ -106,7 +129,7 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
   /// Refresh on the way back so a semester added there shows up here.
   Future<void> openAddSemesterPage() async {
     await nav.goToAddSemesterPage();
-    await retrieveData();
+    await _silentRefresh();
   }
 
   Widget _buildDashboard(BuildContext context, SemesterState data) {
@@ -210,7 +233,7 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
         _buildHint(
           'Belum ada mata kuliah di semester ini. '
           'Tambahkan untuk mulai menghitung nilai kamu!',
-          onTap: () => nav.goToSearchCourseCalculatorPage(
+          onTap: () => nav.goToManualFillPage(
             activeSemester.givenSemester!,
           ),
         ),
@@ -351,16 +374,26 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
     );
   }
 
-  Future<void> _openSemester(SemesterModel semester) {
-    return nav.goToSemesterPage(
+  /// Refresh on the way back: adding a matkul or deleting the semester there
+  /// changes the GPA and course list shown here.
+  Future<void> _openSemester(SemesterModel semester) async {
+    await nav.goToSemesterPage(
       givenSemester: semester.givenSemester!,
       semesterGPA: semester.semesterGPA ?? 0,
       totalSKS: semester.totalSKS ?? 0,
     );
+    await _silentRefresh();
   }
 
-  Future<void> _openCourse(SemesterModel semester, CalculatorModel course) {
-    return nav.goToComponentCalculatorPage(
+  /// Refresh on the way back. The component page keeps `calculatorRM` current
+  /// for the semester page, but this page reads [SemesterState] — so without a
+  /// refetch a component added there leaves the GPA, the weight and the status
+  /// badge here stale until a manual pull-to-refresh.
+  Future<void> _openCourse(
+    SemesterModel semester,
+    CalculatorModel course,
+  ) async {
+    await nav.goToComponentCalculatorPage(
       givenSemester: semester.givenSemester!,
       calculatorId: course.id!,
       courseId: course.courseId!,
@@ -369,5 +402,6 @@ class _CalculatorPageState extends BaseStateful<CalculatorPage> {
       totalPercentage: course.totalPercentage ?? 0,
       courseSKS: course.courseSKS ?? 0,
     );
+    await _silentRefresh();
   }
 }

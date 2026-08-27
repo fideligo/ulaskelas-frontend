@@ -14,6 +14,7 @@ import 'package:ulaskelas/features/matkul/main/domain/entities/query_search_cour
 import 'package:ulaskelas/features/matkul/search/presentation/states/_states.dart';
 import 'package:ulaskelas/features/matkul/search/presentation/widgets/_widgets.dart';
 import 'package:ulaskelas/services/_services.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 import '../../../../../core/utils/in_app_tour/containers/_containers.dart';
 import '../../../../../core/utils/in_app_tour/widgets/_widgets.dart';

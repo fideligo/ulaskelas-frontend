@@ -196,6 +196,11 @@ class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
         print('success');
       }
 
+      // Trigger In-App Review asynchronously after navigation transition
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        InAppReviewService.instance.requestReview();
+      });
+
       await nav.replaceToComponentPage(
         givenSemester: widget.givenSemester,
         courseId: widget.courseId,

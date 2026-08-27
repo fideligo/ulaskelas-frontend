@@ -36,32 +36,7 @@ class SearchCourseState
 
   /// Courses getter with dummy data at default.
   List<CourseModel> get courses => _courses ?? [];
-  List<CourseModel> get filteredCourses {
-    return (_courses ?? [])
-        .where(
-          (element) =>
-              ((element.name
-                          ?.toLowerCase()
-                          .contains(controller.text.toLowerCase()) ??
-                      false) ||
-                  (element.code
-                          ?.toLowerCase()
-                          .contains(controller.text.toLowerCase()) ??
-                      false) ||
-                  (element.description
-                          ?.toLowerCase()
-                          .contains(controller.text.toLowerCase()) ??
-                      false)) &&
-              (!filterRM.state.hasFilter ||
-                  (filterRM.state.selectedType
-                          .contains(element.codeDesc.toString()) ||
-                      filterRM.state.selectedSks
-                          .contains(element.sks.toString()) ||
-                      filterRM.state.selectedSemester
-                          .contains(element.term.toString()))),
-        )
-        .toList();
-  }
+
 
   ListQueue<String> get history => _history ?? ListQueue();
 
@@ -138,8 +113,19 @@ class SearchCourseState
       final lessThanLimit = result.data.length < query.limit;
       _hasReachedMax = result.data.isEmpty || lessThanLimit;
 
+      final lengthBefore = _courses?.length ?? 0;
+
       // Prevent duplicate record
       filterCourse(result.data);
+
+      final lengthAfter = _courses?.length ?? 0;
+
+      // FIX: If backend returned items, but all of them were duplicates
+      // (no new items added), force hasReachedMax to true to prevent
+      // infinite loading loop.
+      if (result.data.isNotEmpty && lengthBefore == lengthAfter) {
+        _hasReachedMax = true;
+      }
     });
   }
 

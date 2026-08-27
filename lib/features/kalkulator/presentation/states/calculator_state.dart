@@ -83,8 +83,6 @@ class CalculatorState {
         WarningMessenger(
           'Kalkulator $failedMessage sudah ada atau tidak ditemukan',
         ).show(ctx!);
-      } else {
-        SuccessMessenger('Semua Kalkulator berhasil dibuat').show(ctx!);
       }
 
       final calcResp = await _repo.getAllCalculator(givenSemester);

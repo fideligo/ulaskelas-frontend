@@ -13,7 +13,6 @@ class CardCourse extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -28,22 +27,9 @@ class CardCourse extends StatelessWidget {
         ),
         child: Row(
           children: <Widget>[
-            Container(
-              height: 50,
-              width: 50,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  model.shortName.toString(),
-                  style: FontTheme.poppins14w700black().copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ),
+            FacultyLogo(
+              code: model.code,
+              facultyName: model.facultyName,
             ),
             const WidthSpace(12),
             Expanded(
@@ -55,15 +41,26 @@ class CardCourse extends StatelessWidget {
                     style: FontTheme.poppins14w700black().copyWith(
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const HeightSpace(4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        model.codeDesc.toString(),
-                        style: FontTheme.poppins12w400black(),
+                      Expanded(
+                        child: Text(
+                          courseSubtitle(
+                            sks: model.sks,
+                            codeDesc: model.codeDesc,
+                            code: model.code,
+                          ),
+                          style: FontTheme.poppins12w500black(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
+                      const WidthSpace(8),
                       Text(
                         '${model.reviewCount} Ulasan',
                         style: FontTheme.poppins12w400black().copyWith(

@@ -10,7 +10,9 @@ import '../../domain/entities/query_semester.dart';
 import '../models/calculator_model.dart';
 import '../models/component_model.dart';
 import '../models/semester_model.dart';
+import '../models/slcm_session_model.dart';
 
 part 'calculator_repository_impl.dart';
 part 'component_repository_impl.dart';
 part 'semester_repository_impl.dart';
+part 'slcm_autofill_repository_impl.dart';

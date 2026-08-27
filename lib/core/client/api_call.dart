@@ -35,7 +35,9 @@ Future<Decide<Failure, T>> apiCall<T>(Future<T> t) async {
       Logger().e('Not Found Failure');
       return Left(
         NotFoundFailure(
-          message: e.response?.data['message'] ?? 'Not Found',
+          message: e.response?.data is Map<String, dynamic>
+              ? e.response?.data['message'] ?? 'Not Found'
+              : 'Not Found',
         ),
       );
     } else {

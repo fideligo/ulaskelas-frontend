@@ -47,46 +47,20 @@ String academicTermLabel(String givenSemester, int userGeneration) {
   if (givenSemester.contains('sp')) {
     final year = int.tryParse(givenSemester.split('_').last);
     if (year == null) {
-      return 'Semester PENDEK';
+      return 'SP';
     }
-    return 'Semester PENDEK ${year - 1}/$year';
+    return 'SP ${year - 1}/$year';
   }
 
   final term = int.tryParse(givenSemester);
   if (term == null || userGeneration <= 0) {
-    return semesterFullLabel(givenSemester);
+    final label = semesterFullLabel(givenSemester);
+    return label.startsWith('Semester ') ? label.substring(9) : label;
   }
 
   final startYear = userGeneration + (term - 1) ~/ 2;
   final parity = term.isEven ? 'GENAP' : 'GANJIL';
-  return 'Semester $parity $startYear/${startYear + 1}';
-}
-
-/// Every semester a student can add, in study order: the two regular terms of
-/// an academic year followed by that year's short semester.
-///
-/// The short semester years follow the student's generation — a 2025 intake
-/// gets `sp_2026` .. `sp_2030` — so this list is never hardcoded.
-List<String> semesterCatalogue(int userGeneration) {
-  return [
-    '1',
-    '2',
-    'sp_${userGeneration + 1}',
-    '3',
-    '4',
-    'sp_${userGeneration + 2}',
-    '5',
-    '6',
-    'sp_${userGeneration + 3}',
-    '7',
-    '8',
-    'sp_${userGeneration + 4}',
-    '9',
-    '10',
-    'sp_${userGeneration + 5}',
-    '11',
-    '12',
-  ];
+  return '$parity $startYear/${startYear + 1}';
 }
 
 /// A GPA as shown to the user, or `-` when there is none yet.

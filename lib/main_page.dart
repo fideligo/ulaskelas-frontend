@@ -33,9 +33,9 @@ class _MainPageState extends BaseStateful<MainPage>
   void init() {
     _children = <Widget>[
       HomePage(
-        onSeeAllCourse: () {
-          mainTabRM.state = MainTab.matkul;
-          MixpanelService.track('view_all_courses');
+        onOpenCalculator: () {
+          mainTabRM.state = MainTab.kalkulator;
+          MixpanelService.track('open_calculator');
         },
       ),
       const SearchCoursePage(),

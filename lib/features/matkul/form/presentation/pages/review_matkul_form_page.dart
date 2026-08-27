@@ -165,6 +165,12 @@ class _ReviewMatkulFormPageState extends BaseStateful<ReviewMatkulFormPage> {
 
                       reviewFormRM.state.cleanForm();
                       nav.pop();
+
+                      // Trigger In-App Review asynchronously after navigation transition
+                      Future.delayed(const Duration(milliseconds: 1500), () {
+                        InAppReviewService.instance.requestReview();
+                      });
+
                       await nav.replaceToReviewPendingPage();
                     },
                   ),

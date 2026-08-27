@@ -24,7 +24,21 @@ class Config {
     imagesPath = '${assetsPath!}/images';
     iconsPath = '${assetsPath!}/icons';
 
-    await Firebase.initializeApp();
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyAGSodkq-bKUjO8yhJ37JL0QLncB7lmS6g",
+          authDomain: "ulas-kelas.firebaseapp.com",
+          projectId: "ulas-kelas",
+          storageBucket: "ulas-kelas.appspot.com",
+          messagingSenderId: "178086714441",
+          appId: "1:178086714441:web:6796c3106a806de2cc7398",
+          measurementId: "G-PNTR7JWHSZ",
+        ),
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
     // try {
     //
     // }

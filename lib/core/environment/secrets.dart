@@ -11,3 +11,5 @@ abstract class Secret {
   @EnviedField(varName: 'MIXPANEL_TOKEN')
   static const String mixpanelToken = _Secret.mixpanelToken;
 }
+
+// force rebuild

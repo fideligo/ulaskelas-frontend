@@ -75,10 +75,6 @@ final calculatorRM = RM.inject(
   CalculatorState.new,
 );
 
-final addSemesterRM = RM.inject(
-  AddSemesterState.new,
-);
-
 final autoFillRM = RM.inject(
   AutoFillState.new,
 );
@@ -163,7 +159,6 @@ class GlobalState {
       Inject(SearchTagState.new),
       Inject(BookmarkState.new),
       Inject(CalculatorState.new),
-      Inject(AddSemesterState.new),
       Inject(AutoFillState.new),
       Inject(ManualFillState.new),
       Inject(SemesterState.new),
@@ -186,7 +181,6 @@ class GlobalState {
     Inject(SearchTagState.new),
     Inject(BookmarkState.new),
     Inject(CalculatorState.new),
-    Inject(AddSemesterState.new),
     Inject(AutoFillState.new),
     Inject(ManualFillState.new),
     Inject(SemesterState.new),
