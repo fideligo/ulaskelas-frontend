@@ -36,7 +36,7 @@ void main() {
     final seen = <NotificationPayload>[];
     NotificationService.onPayloadTapped = seen.add;
 
-    final payload = NotificationPayload.courseReview(matkulId: '42');
+    final payload = NotificationPayload.courseReview(courseId: '42');
     NotificationService.handleTap(payload);
 
     expect(seen, [payload]);
@@ -46,7 +46,7 @@ void main() {
 
   test('park overwrites, so only the newest deep link is replayed', () {
     final first = NotificationPayload.calculator();
-    final second = NotificationPayload.courseReview(matkulId: '7');
+    final second = NotificationPayload.courseReview(courseId: '7');
 
     NotificationService.park(first);
     NotificationService.park(second);

@@ -6,26 +6,63 @@ void main() {
   group('NotificationPayload.fromMap', () {
     test('reads the calculator contract', () {
       final payload = NotificationPayload.fromMap(const {
-        'type': 'CALCULATOR',
+        'type': 'calculator_reminder',
+        'target': 'grade_calculator',
       });
 
-      expect(payload.type, NotificationType.calculator);
+      expect(payload.type, NotificationType.calculatorReminder);
+      expect(payload.target, NotificationTarget.gradeCalculator);
       expect(payload.isCalculator, isTrue);
       expect(payload.isCourseReview, isFalse);
       expect(payload.isSupported, isTrue);
-      expect(payload.courseId, isNull);
+      expect(payload.courseIdValue, isNull);
     });
 
     test('reads the course review contract', () {
       final payload = NotificationPayload.fromMap(const {
-        'type': 'COURSE_REVIEW',
-        'matkul_id': '123',
+        'type': 'course_review_reminder',
+        'target': 'course_review',
+        'course_id': '123',
         'course_code': 'CSCM601043',
       });
 
       expect(payload.isCourseReview, isTrue);
-      expect(payload.courseId, 123);
+      expect(payload.courseIdValue, 123);
       expect(payload.courseCode, 'CSCM601043');
+    });
+
+    test('ignores the extra keys the backend sends alongside the contract', () {
+      final payload = NotificationPayload.fromMap(const {
+        'type': 'calculator_reminder',
+        'target': 'grade_calculator',
+        'notification_id': '42',
+        'badge': '3',
+      });
+
+      expect(payload.isSupported, isTrue);
+      expect(payload.isCalculator, isTrue);
+    });
+
+    test('falls back to the target implied by type when target is absent', () {
+      final payload = NotificationPayload.fromMap(const {
+        'type': 'course_review_reminder',
+        'course_id': '9',
+      });
+
+      expect(payload.target, isNull);
+      expect(payload.routingTarget, NotificationTarget.courseReview);
+      expect(payload.isCourseReview, isTrue);
+      expect(payload.isSupported, isTrue);
+    });
+
+    test('routes on target even when the type is unrecognised', () {
+      final payload = NotificationPayload.fromMap(const {
+        'type': 'some_future_reminder',
+        'target': 'grade_calculator',
+      });
+
+      expect(payload.isSupported, isTrue);
+      expect(payload.isCalculator, isTrue);
     });
 
     test('treats an unknown type as unsupported instead of throwing', () {
@@ -38,6 +75,12 @@ void main() {
       expect(payload.isCourseReview, isFalse);
     });
 
+    test('rejects the retired uppercase contract', () {
+      final payload = NotificationPayload.fromMap(const {'type': 'CALCULATOR'});
+
+      expect(payload.isSupported, isFalse);
+    });
+
     test('survives a payload with no type at all', () {
       final payload = NotificationPayload.fromMap(const <String, dynamic>{});
 
@@ -45,41 +88,41 @@ void main() {
       expect(payload.isSupported, isFalse);
     });
 
-    test('courseId is null when matkul_id is not numeric', () {
+    test('courseIdValue is null when course_id is not numeric', () {
       final payload = NotificationPayload.fromMap(const {
-        'type': 'COURSE_REVIEW',
-        'matkul_id': 'not-a-number',
+        'type': 'course_review_reminder',
+        'course_id': 'not-a-number',
       });
 
-      expect(payload.courseId, isNull);
+      expect(payload.courseIdValue, isNull);
     });
 
     test('blank and whitespace-only values collapse to null', () {
       final payload = NotificationPayload.fromMap(const {
-        'type': 'COURSE_REVIEW',
-        'matkul_id': '   ',
+        'type': 'course_review_reminder',
+        'course_id': '   ',
         'course_code': '',
       });
 
-      expect(payload.matkulId, isNull);
+      expect(payload.courseId, isNull);
       expect(payload.courseCode, isNull);
     });
 
     test('coerces non-string values, as FCM may deliver numbers in tests', () {
       final payload = NotificationPayload.fromMap(const {
-        'type': 'COURSE_REVIEW',
-        'matkul_id': 456,
+        'type': 'course_review_reminder',
+        'course_id': 456,
       });
 
-      expect(payload.matkulId, '456');
-      expect(payload.courseId, 456);
+      expect(payload.courseId, '456');
+      expect(payload.courseIdValue, 456);
     });
   });
 
   group('NotificationPayload.tryParse', () {
     test('round-trips through toJsonString', () {
       final original = NotificationPayload.courseReview(
-        matkulId: '77',
+        courseId: '77',
         courseCode: 'CSGE602070',
         title: 'Judul',
         body: 'Isi',
@@ -93,8 +136,9 @@ void main() {
     test('omits null fields from the encoded map', () {
       final payload = NotificationPayload.calculator();
 
-      expect(payload.toMap().containsKey('matkul_id'), isFalse);
-      expect(payload.toMap()['type'], NotificationType.calculator);
+      expect(payload.toMap().containsKey('course_id'), isFalse);
+      expect(payload.toMap()['type'], NotificationType.calculatorReminder);
+      expect(payload.toMap()['target'], NotificationTarget.gradeCalculator);
     });
 
     test('returns null for malformed json rather than throwing', () {
@@ -114,10 +158,37 @@ void main() {
 
   group('NotificationType', () {
     test('only the two story [C] triggers are routable', () {
-      expect(NotificationType.isSupported('CALCULATOR'), isTrue);
-      expect(NotificationType.isSupported('COURSE_REVIEW'), isTrue);
-      expect(NotificationType.isSupported('calculator'), isFalse);
+      expect(
+        NotificationType.isSupported('calculator_reminder'),
+        isTrue,
+      );
+      expect(
+        NotificationType.isSupported('course_review_reminder'),
+        isTrue,
+      );
+      expect(NotificationType.isSupported('CALCULATOR'), isFalse);
       expect(NotificationType.isSupported(null), isFalse);
+    });
+
+    test('maps each type onto the screen it opens', () {
+      expect(
+        NotificationType.targetFor('calculator_reminder'),
+        NotificationTarget.gradeCalculator,
+      );
+      expect(
+        NotificationType.targetFor('course_review_reminder'),
+        NotificationTarget.courseReview,
+      );
+      expect(NotificationType.targetFor('unknown'), isNull);
+    });
+  });
+
+  group('NotificationTarget', () {
+    test('only the two backend targets are accepted', () {
+      expect(NotificationTarget.isSupported('grade_calculator'), isTrue);
+      expect(NotificationTarget.isSupported('course_review'), isTrue);
+      expect(NotificationTarget.isSupported('COURSE_REVIEW'), isFalse);
+      expect(NotificationTarget.isSupported(null), isFalse);
     });
   });
 }

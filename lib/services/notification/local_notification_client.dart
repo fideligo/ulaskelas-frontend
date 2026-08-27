@@ -83,7 +83,7 @@ class LocalNotificationClient {
   /// Stable per (type, course) so a repeated reminder replaces the previous one
   /// instead of stacking. Masked to 31 bits because Android ids are `int32`.
   static int _idFor(NotificationPayload payload) {
-    return '${payload.type}:${payload.matkulId ?? ''}'.hashCode & 0x7fffffff;
+    return '${payload.type}:${payload.courseId ?? ''}'.hashCode & 0x7fffffff;
   }
 
   // Used only for data-only messages. Production wording is supplied in the

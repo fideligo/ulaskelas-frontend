@@ -2,6 +2,11 @@ part of '../_notification.dart';
 
 /// Typed view over the `data` map of a push or local notification.
 ///
+/// Mirrors the map built by the backend's `push_notifications.send_push`:
+/// `type`, `target`, and `course_id` when the reminder is about one course.
+/// [target] is what the router acts on; [type] only says which reminder
+/// produced it.
+///
 /// FCM delivers every `data` value as a string, so parsing is defensive
 /// throughout: a malformed payload surfaces as an unsupported [type] instead of
 /// throwing. These constructors run inside message handlers, one of them in a
@@ -10,7 +15,8 @@ part of '../_notification.dart';
 class NotificationPayload {
   const NotificationPayload({
     required this.type,
-    this.matkulId,
+    this.target,
+    this.courseId,
     this.courseCode,
     this.title,
     this.body,
@@ -19,7 +25,8 @@ class NotificationPayload {
   factory NotificationPayload.fromMap(Map<String, dynamic> map) {
     return NotificationPayload(
       type: _asString(map[keyType]) ?? '',
-      matkulId: _asString(map[keyMatkulId]),
+      target: _asString(map[keyTarget]),
+      courseId: _asString(map[keyCourseId]),
       courseCode: _asString(map[keyCourseCode]),
       title: _asString(map[keyTitle]),
       body: _asString(map[keyBody]),
@@ -29,23 +36,25 @@ class NotificationPayload {
   /// Reminder to fill in grade components. Carries no extra arguments.
   factory NotificationPayload.calculator({String? title, String? body}) {
     return NotificationPayload(
-      type: NotificationType.calculator,
+      type: NotificationType.calculatorReminder,
+      target: NotificationTarget.gradeCalculator,
       title: title,
       body: body,
     );
   }
 
-  /// Reminder to review a course. [matkulId] is required to resolve the form;
+  /// Reminder to review a course. [courseId] is required to resolve the form;
   /// [courseCode] is the fallback route argument when hydration fails.
   factory NotificationPayload.courseReview({
-    required String matkulId,
+    required String courseId,
     String? courseCode,
     String? title,
     String? body,
   }) {
     return NotificationPayload(
-      type: NotificationType.courseReview,
-      matkulId: matkulId,
+      type: NotificationType.courseReviewReminder,
+      target: NotificationTarget.courseReview,
+      courseId: courseId,
       courseCode: courseCode,
       title: title,
       body: body,
@@ -53,13 +62,23 @@ class NotificationPayload {
   }
 
   static const String keyType = 'type';
-  static const String keyMatkulId = 'matkul_id';
+  static const String keyTarget = 'target';
+  static const String keyCourseId = 'course_id';
+
+  /// Not sent by the backend today — `send_push` carries only `course_id`.
+  /// Retained because the router still uses it to reach the detail page when
+  /// hydration fails, and the dev simulator supplies it.
   static const String keyCourseCode = 'course_code';
   static const String keyTitle = 'title';
   static const String keyBody = 'body';
 
   final String type;
-  final String? matkulId;
+
+  /// Null when the sender omitted it; [routingTarget] derives one from [type].
+  final String? target;
+
+  /// The backend's `course_id`, as the string FCM delivers it.
+  final String? courseId;
   final String? courseCode;
   final String? title;
   final String? body;
@@ -97,20 +116,34 @@ class NotificationPayload {
     return text.isEmpty ? null : text;
   }
 
-  bool get isSupported => NotificationType.isSupported(type);
+  /// The screen this payload should open.
+  ///
+  /// Prefers the backend's explicit `target`, falling back to the one implied
+  /// by [type] so a sender that omits the key still routes.
+  String? get routingTarget {
+    if (NotificationTarget.isSupported(target)) return target;
+    return NotificationType.targetFor(type);
+  }
 
-  bool get isCalculator => type == NotificationType.calculator;
+  /// Whether this payload can be routed at all. A payload is usable when
+  /// either key resolves, so an unrecognised [type] carrying a known [target]
+  /// still reaches the right screen.
+  bool get isSupported => routingTarget != null;
 
-  bool get isCourseReview => type == NotificationType.courseReview;
+  bool get isCalculator =>
+      routingTarget == NotificationTarget.gradeCalculator;
 
-  /// [matkulId] arrives as a string over the wire. Null when absent or when it
+  bool get isCourseReview => routingTarget == NotificationTarget.courseReview;
+
+  /// [courseId] arrives as a string over the wire. Null when absent or when it
   /// cannot be parsed as an integer.
-  int? get courseId => int.tryParse(matkulId ?? '');
+  int? get courseIdValue => int.tryParse(courseId ?? '');
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       keyType: type,
-      if (matkulId != null) keyMatkulId: matkulId,
+      if (target != null) keyTarget: target,
+      if (courseId != null) keyCourseId: courseId,
       if (courseCode != null) keyCourseCode: courseCode,
       if (title != null) keyTitle: title,
       if (body != null) keyBody: body,
@@ -121,14 +154,16 @@ class NotificationPayload {
 
   NotificationPayload copyWith({
     String? type,
-    String? matkulId,
+    String? target,
+    String? courseId,
     String? courseCode,
     String? title,
     String? body,
   }) {
     return NotificationPayload(
       type: type ?? this.type,
-      matkulId: matkulId ?? this.matkulId,
+      target: target ?? this.target,
+      courseId: courseId ?? this.courseId,
       courseCode: courseCode ?? this.courseCode,
       title: title ?? this.title,
       body: body ?? this.body,
@@ -143,12 +178,14 @@ class NotificationPayload {
     if (identical(this, other)) return true;
     return other is NotificationPayload &&
         other.type == type &&
-        other.matkulId == matkulId &&
+        other.target == target &&
+        other.courseId == courseId &&
         other.courseCode == courseCode &&
         other.title == title &&
         other.body == body;
   }
 
   @override
-  int get hashCode => Object.hash(type, matkulId, courseCode, title, body);
+  int get hashCode =>
+      Object.hash(type, target, courseId, courseCode, title, body);
 }

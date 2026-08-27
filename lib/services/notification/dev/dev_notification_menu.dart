@@ -45,7 +45,7 @@ class _DevNotificationMenuState extends State<_DevNotificationMenu> {
 
   NotificationPayload get _courseReviewPayload =>
       NotificationPayload.courseReview(
-        matkulId: _courseIdController.text.trim(),
+        courseId: _courseIdController.text.trim(),
         courseCode: _courseCodeController.text.trim(),
       );
 
@@ -83,7 +83,7 @@ class _DevNotificationMenuState extends State<_DevNotificationMenu> {
                       controller: _courseIdController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'matkul_id',
+                        labelText: 'course_id',
                         isDense: true,
                         border: OutlineInputBorder(),
                       ),

@@ -34,8 +34,12 @@ abstract class NotificationRouter {
 
   /// Single funnel for every notification tap, in every app state.
   static Future<void> handle(NotificationPayload payload) async {
-    if (!payload.isSupported) {
-      Logger().w('NotificationRouter: unroutable type "${payload.type}"');
+    final target = payload.routingTarget;
+    if (target == null) {
+      Logger().w(
+        'NotificationRouter: unroutable type "${payload.type}" '
+        'target "${payload.target}"',
+      );
       return;
     }
 
@@ -51,10 +55,13 @@ abstract class NotificationRouter {
       params: {'type': payload.type},
     );
 
-    switch (payload.type) {
-      case NotificationType.calculator:
+    // Switches on the target rather than the type: the backend sends `target`
+    // to name the destination, which leaves reminder types free to be added or
+    // renamed without touching the routing table.
+    switch (target) {
+      case NotificationTarget.gradeCalculator:
         _goToCalculator();
-      case NotificationType.courseReview:
+      case NotificationTarget.courseReview:
         await _goToCourseReview(payload);
     }
   }
@@ -68,7 +75,7 @@ abstract class NotificationRouter {
   }
 
   static Future<void> _goToCourseReview(NotificationPayload payload) async {
-    final courseId = payload.courseId;
+    final courseId = payload.courseIdValue;
     if (courseId == null) {
       Logger().w('NotificationRouter: course review without a usable id');
       _fallbackToMatkulTab();
