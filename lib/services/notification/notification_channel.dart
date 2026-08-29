@@ -28,9 +28,10 @@ class NotificationChannels {
     channelDescription: _description,
     importance: Importance.high,
     priority: Priority.high,
-    // TODO(team): supply a monochrome status bar drawable. Android renders a
-    // non-alpha icon as a white square.
-    icon: '@mipmap/ic_launcher',
+    // A monochrome silhouette — Android renders only a notification icon's
+    // alpha channel, so a full-colour asset like the launcher icon comes out
+    // as a solid blob rather than a recognisable shape.
+    icon: '@drawable/ic_stat_notify',
   );
 
   // Defaults suffice: iOS foreground presentation is disabled in [FcmClient],

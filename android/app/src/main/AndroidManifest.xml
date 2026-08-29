@@ -99,6 +99,15 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="high_importance_channel" />
+        <!-- Icon FCM's own system-drawn notifications use in the background or
+             terminated state, where LocalNotificationClient never runs. Without
+             this, FCM falls back to the application icon, which renders as a
+             solid blob for the same reason the foreground path needed
+             ic_stat_notify: only the alpha channel of a notification icon is
+             drawn. Must be a monochrome drawable, not a mipmap. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

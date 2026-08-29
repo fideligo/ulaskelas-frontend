@@ -13,7 +13,7 @@ class LocalNotificationClient {
 
   static Future<void> init() async {
     const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('@drawable/ic_stat_notify'),
       // Consent is owned by [NotificationPermission] and must not be requested
       // during the splash screen.
       iOS: DarwinInitializationSettings(
