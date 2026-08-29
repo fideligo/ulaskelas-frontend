@@ -14,7 +14,7 @@ import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ulaskelas/core/constants/_constants.dart';
 import 'package:ulaskelas/services/_services.dart';
-import 'package:ulaskelas/services/notification/device_token_api.dart';
+import 'package:ulaskelas/services/notification/notification_api.dart';
 
 part 'badge_service.dart';
 part 'fcm_client.dart';

@@ -20,6 +20,10 @@ class EndpointsRevamp {
   // DELETE detaches it on logout.
   static final deviceTokens = '$baseUrl/api/device-tokens';
 
+  /// Clears the backend's unread tally, which it stamps into every push as
+  /// `notification_count` — the number Android paints as the badge.
+  static final notificationsReadAll = '$baseUrl/api/notifications/read-all';
+
   static final tanyaTeman = '$baseUrl/api/tanya-teman';
   static final jawabTeman = '$baseUrl/api/jawab-teman';
   static final likePost = '$baseUrl/api/tanya-teman?is_like=true';

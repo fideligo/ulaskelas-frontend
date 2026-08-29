@@ -10,7 +10,17 @@ class BadgeService {
 
   static Future<void> increment() => _write(count + 1);
 
-  static Future<void> reset() => _write(0);
+  /// Clears the badge, locally and on the server.
+  ///
+  /// Both halves matter. The backend keeps its own unread tally and stamps it
+  /// into every push as `notification_count`, which Android renders as the
+  /// badge directly — so zeroing only the local mirror leaves that tally
+  /// standing, and the next push paints the stale server number back over it.
+  /// Fire-and-forget: this trails opening the app, and nothing waits on it.
+  static Future<void> reset() async {
+    await _write(0);
+    unawaited(NotificationApi.markAllRead());
+  }
 
   /// Re-applies the persisted count to the launcher on cold start.
   ///
@@ -33,6 +43,11 @@ class BadgeService {
   static Future<void> incrementFromIsolate() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      // The cache behind [SharedPreferences] is per-isolate and loaded once, so
+      // this isolate keeps serving whatever the count was when it first woke.
+      // A [reset] written by the main isolate is invisible without this, and
+      // the badge then climbs from a stale base instead of from zero.
+      await prefs.reload();
       final next = (prefs.getInt(PreferencesKeys.badgeCount) ?? 0) + 1;
       await prefs.setInt(PreferencesKeys.badgeCount, next);
       await _mirrorToLauncher(next);
