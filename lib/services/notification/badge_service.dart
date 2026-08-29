@@ -14,17 +14,28 @@ class BadgeService {
 
   /// Re-applies the persisted count to the launcher on cold start.
   ///
-  /// [incrementFromIsolate] can only reach SharedPreferences, so the launcher
-  /// may be stale by the time the app is opened.
+  /// Still needed now that [incrementFromIsolate] mirrors as it goes: a reboot,
+  /// a launcher swap, or a launcher that dropped its own state leaves the badge
+  /// showing nothing while the stored count says otherwise.
   static Future<void> restore() => _write(count);
 
-  /// Increments from the FCM background isolate, where [Pref] is uninitialised
-  /// and the launcher plugin channel is unavailable.
+  /// Increments from the FCM background isolate, where [Pref] is uninitialised,
+  /// so [SharedPreferences] is reached directly instead.
+  ///
+  /// The launcher is mirrored from here too. This was previously assumed
+  /// impossible — "the launcher plugin channel is unavailable" — but the
+  /// background engine registers plugins just like the main one: the
+  /// `SharedPreferences` call above is itself a method channel, and it works.
+  /// Without this the count only reached the launcher on the next [restore],
+  /// meaning the badge appeared only *after* the user opened the app, which is
+  /// the moment it stops being useful. A launcher that genuinely cannot be
+  /// reached still degrades quietly, because [_mirrorToLauncher] swallows it.
   static Future<void> incrementFromIsolate() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final current = prefs.getInt(PreferencesKeys.badgeCount) ?? 0;
-      await prefs.setInt(PreferencesKeys.badgeCount, current + 1);
+      final next = (prefs.getInt(PreferencesKeys.badgeCount) ?? 0) + 1;
+      await prefs.setInt(PreferencesKeys.badgeCount, next);
+      await _mirrorToLauncher(next);
     } catch (e) {
       Logger().w('BadgeService: isolate increment failed - $e');
     }
