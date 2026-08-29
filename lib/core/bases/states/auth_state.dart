@@ -76,6 +76,7 @@ class AuthState {
           return;
         }
         unawaited(nav.replaceToMainPage());
+        onLoginCompleted();
         SuccessMessenger('Login Successful').show(ctx!);
       }
     }
