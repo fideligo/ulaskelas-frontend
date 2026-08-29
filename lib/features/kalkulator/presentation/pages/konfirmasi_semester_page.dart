@@ -130,8 +130,24 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
       if (!mounted) {
         return;
       }
-      SuccessMessenger('Semester berhasil dibuat dari SLCM').show(context);
+      // Order matters. `SuccessMessenger` is a Flushbar, which pushes a route
+      // of its own; showing it first left `popUntil` popping a route that had
+      // not finished being pushed, which trips Navigator's
+      // `entry.currentState == _RouteLifecycle.popping` assertion and then
+      // leaves the navigator locked. Popping first also means the toast
+      // actually survives — `popUntil` would otherwise dismiss it instantly.
       nav.popUntil(RouteName.mainPage);
+      // Deferred a frame so the pop settles before another route is pushed,
+      // and shown on the navigator's own context because this page is gone by
+      // then, which makes `context` unusable.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navigatorContext = nav.navigatorKey.currentContext;
+        if (navigatorContext == null) {
+          return;
+        }
+        SuccessMessenger('Semester berhasil dibuat dari SLCM')
+            .show(navigatorContext);
+      });
     } on Failure catch (failure) {
       if (!mounted) {
         return;
