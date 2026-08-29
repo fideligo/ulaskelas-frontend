@@ -16,6 +16,10 @@ class EndpointsRevamp {
   static String slcmAutofillConfirm(String sessionId) =>
       '${slcmAutofillSession(sessionId)}/confirm';
 
+  // Push notifications. POST registers the FCM token for the signed-in user,
+  // DELETE detaches it on logout.
+  static final deviceTokens = '$baseUrl/api/device-tokens';
+
   static final tanyaTeman = '$baseUrl/api/tanya-teman';
   static final jawabTeman = '$baseUrl/api/jawab-teman';
   static final likePost = '$baseUrl/api/tanya-teman?is_like=true';
