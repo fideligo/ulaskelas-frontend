@@ -24,6 +24,10 @@ class SemesterState implements FutureState<SemesterState, void> {
   /// Status badge per calculator id, filled in by [_loadCourseStatus].
   final Map<int, CourseStatus> _courseStatuses = {};
 
+  /// The dashboard refetch currently running, so [_refresh] can queue behind
+  /// it instead of racing it.
+  Future<void>? _refreshInFlight;
+
   /// Hides the cumulative GPA behind `****`, the way a banking app hides a
   /// balance. Local to the session, never persisted.
   bool isGpaHidden = false;
@@ -107,8 +111,7 @@ class SemesterState implements FutureState<SemesterState, void> {
 
   @override
   Future<void> retrieveData([void _]) async {
-    await _fetchSemesters();
-    await _loadActiveSemesterCourses();
+    await _refresh();
     semesterRM.notify();
 
     // For Showcase Purpose (new user)
@@ -124,8 +127,7 @@ class SemesterState implements FutureState<SemesterState, void> {
       ErrorMessenger('Data Semester tersebut sudah pernah dibuat').show(ctx!);
     }, (result) async {
       SuccessMessenger('Data Semester berhasil dibuat').show(ctx!);
-      await _fetchSemesters();
-      await _loadActiveSemesterCourses();
+      await _refresh();
     });
     semesterRM.notify();
   }
@@ -139,8 +141,7 @@ class SemesterState implements FutureState<SemesterState, void> {
           .show(ctx!);
     }, (result) async {
       SuccessMessenger('Data Semester berhasil dihapus').show(ctx!);
-      await _fetchSemesters();
-      await _loadActiveSemesterCourses();
+      await _refresh();
     });
     semesterRM.notify();
   }
@@ -160,8 +161,7 @@ class SemesterState implements FutureState<SemesterState, void> {
       ErrorMessenger('Data Semester gagal dibuat').show(ctx!);
     }, (result) async {
       SuccessMessenger('Data Semester berhasil dibuat').show(ctx!);
-      await _fetchSemesters();
-      await _loadActiveSemesterCourses();
+      await _refresh();
 
       semesterRM.notify();
 
@@ -171,6 +171,43 @@ class SemesterState implements FutureState<SemesterState, void> {
         await showcaseFilledSemester();
       }
     });
+  }
+
+  /// Refetches the semester list, then the courses of whichever semester that
+  /// list makes active.
+  ///
+  /// Rounds are chained rather than run side by side. Callers do overlap in
+  /// practice: deleting a semester refreshes from here while
+  /// `KalkulatorPage._silentRefresh` fires on the way back from the semester
+  /// page. Two rounds in flight let the slower one publish the list it read
+  /// before the write, quietly undoing the newer one.
+  ///
+  /// Each caller runs its own round instead of joining the one already going,
+  /// because a caller that just mutated data needs numbers fetched after its
+  /// own write — joining an older round would hand it the state it just
+  /// changed.
+  Future<void> _refresh() {
+    final previous = _refreshInFlight;
+    // Assigned before any await, so two callers arriving in the same event
+    // loop turn still queue rather than both starting a round.
+    final started = previous == null
+        ? _runRefresh()
+        : previous.then<void>(
+            (_) => _runRefresh(),
+            // A round that failed must not stop the next one from running.
+            onError: (Object _) => _runRefresh(),
+          );
+    _refreshInFlight = started;
+    return started.whenComplete(() {
+      if (identical(_refreshInFlight, started)) {
+        _refreshInFlight = null;
+      }
+    });
+  }
+
+  Future<void> _runRefresh() async {
+    await _fetchSemesters();
+    await _loadActiveSemesterCourses();
   }
 
   Future<void> _fetchSemesters() async {
@@ -194,9 +231,21 @@ class SemesterState implements FutureState<SemesterState, void> {
     }
 
     final resp = await _calculatorRepo.getAllCalculator(givenSemester);
-    resp.fold((failure) => throw failure, (result) {
-      _activeCourses = result.data;
-    });
+    resp.fold<void>(
+      (failure) {
+        // The semester disappearing between the list call and this one is what
+        // deleting it looks like to a round that started just before the
+        // delete landed — an empty course list, not a failure worth showing.
+        // Every other failure still propagates to the caller.
+        if (failure is NotFoundFailure) {
+          return;
+        }
+        throw failure;
+      },
+      (result) {
+        _activeCourses = result.data;
+      },
+    );
 
     await Future.wait(activeCourses.map(_loadCourseStatus));
   }
