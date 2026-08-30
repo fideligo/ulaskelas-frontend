@@ -53,7 +53,7 @@ class _MainPageState extends BaseStateful<MainPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final tourDone = Pref.getBool('doneAppTour') ?? false;
       if (!tourDone) {
-        showInAppTourOpening(navbarContext!);
+        unawaited(_startInAppTour());
       }
       // Consent is asked at the end of the tour (`showcase_flow.dart`). This
       // call only backfills installs that finished the tour before that
@@ -79,6 +79,36 @@ class _MainPageState extends BaseStateful<MainPage>
     if (state == AppLifecycleState.resumed) {
       unawaited(BadgeService.reset());
     }
+  }
+
+  /// Opens the tour only once `MainPage` can actually host a dialog.
+  ///
+  /// The previous call site — `showInAppTourOpening(navbarContext!)` straight
+  /// from the first post-frame callback — assumed `ShowCaseWidget`'s builder
+  /// had already run, because that builder is what assigns `navbarContext`.
+  /// When that assumption does not hold the `!` throws inside a future nobody
+  /// awaits, so Flutter merely prints it and the tour never opens.
+  ///
+  /// The failure is invisible rather than loud, and it leaves the tour
+  /// half-started: every per-page showcase is gated on `doneAppTour` alone, so
+  /// they keep firing, while `showInAppTourClosing` is never reached and the
+  /// flag is never set. Waiting for a non-null `navbarContext` on a settled
+  /// route drops both the bang and the single-frame assumption; on the path
+  /// that already worked the loop exits on its first iteration.
+  Future<void> _startInAppTour() async {
+    for (var attempt = 0; attempt < 40; attempt++) {
+      if (!mounted) return;
+      final settled = ModalRoute.of(context)?.isCurrent ?? true;
+      if (navbarContext != null && settled) {
+        await showInAppTourOpening(navbarContext!);
+        return;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    debugPrint(
+      'MainPage: in-app tour skipped - navbarContext '
+      '${navbarContext == null ? 'never set' : 'set'}, route never settled',
+    );
   }
 
   Future<void> _onFirstFrame({required bool askPermission}) async {
