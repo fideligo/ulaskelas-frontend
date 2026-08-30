@@ -14,13 +14,8 @@ class CardActiveCourse extends StatelessWidget {
   final CalculatorModel model;
   final CourseStatus status;
 
-  /// Faculty name for the crest.
-  ///
-  // TODO: await faculties field from BE
-  /// Nothing passes this yet: the card is fed by `CalculatorModel`, and
-  /// `CalculatorSerializer` does not return `faculties`. Wire the call site in
-  /// `kalkulator_page.dart` once it does — until then the crest falls back to
-  /// the course-code heuristic.
+  /// Retained so existing call sites keep compiling; [FacultyLogo] resolves
+  /// the crest from the course code exclusively and never reads this.
   final String? facultyName;
 
   final VoidCallback? onTap;
