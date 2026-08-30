@@ -181,7 +181,17 @@ class AuthenticationPage extends StatelessWidget {
       }
       unawaited(nav.replaceToMainPage());
       onLoginCompleted();
-      SuccessMessenger('Login Successful').show(ctx!);
+      // Deferred a frame, and not merely for tidiness. Pushing the Flushbar's
+      // route while `pushReplacement` is still flushing history leaves that
+      // route entry out of lifecycle sync, so when the bar auto-dismisses
+      // 1800ms later `FlushbarRoute.didPop` trips `finalizeRoute`'s
+      // `entry.currentState == _RouteLifecycle.popping` assertion from inside
+      // `_flushHistoryUpdates`. The transaction aborts with `_debugLocked`
+      // still true, and every route pushed afterwards asserts — the in-app
+      // tour's `showGeneralDialog` being the first casualty.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        SuccessMessenger('Login Successful').show(ctx!);
+      });
     }
     unawaited(
       authRM.setState((s) {

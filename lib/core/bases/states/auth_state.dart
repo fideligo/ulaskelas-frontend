@@ -77,7 +77,11 @@ class AuthState {
         }
         unawaited(nav.replaceToMainPage());
         onLoginCompleted();
-        SuccessMessenger('Login Successful').show(ctx!);
+        // Same deferral as `AuthenticationPage._ssoLogin`: raising the bar
+        // inside the navigation transaction leaves the navigator locked.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          SuccessMessenger('Login Successful').show(ctx!);
+        });
       }
     }
   }
