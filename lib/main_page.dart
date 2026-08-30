@@ -55,8 +55,9 @@ class _MainPageState extends BaseStateful<MainPage>
       if (!tourDone) {
         showInAppTourOpening(navbarContext!);
       }
-      // The permission sheet would otherwise overlay the in-app tour dialog,
-      // so first-run users are prompted on a later launch.
+      // Consent is asked at the end of the tour (`showcase_flow.dart`). This
+      // call only backfills installs that finished the tour before that
+      // shipped; `requestIfNeeded` is a no-op once the sheet has been shown.
       unawaited(_onFirstFrame(askPermission: tourDone));
     });
     SystemChrome.setEnabledSystemUIMode(
