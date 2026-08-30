@@ -29,10 +29,8 @@ class CardMatkulReview extends StatelessWidget {
           children: [
             Row(
               children: <Widget>[
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 50,
-                  height: 50,
+                FacultyLogo(
+                  code: review.courseCode,
                 ),
                 const WidthSpace(12),
                 Expanded(
