@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome status-bar / notification-tray icon.
+
+     Android renders only the alpha channel of a notification icon and fills
+     it with a system-chosen colour, so a full-colour asset (the launcher
+     icon this replaced) renders as a solid blob instead of a recognisable
+     shape. This is a flat white silhouette on transparent background, which
+     is what both flutter_local_notifications and FCM's own system-drawn
+     notifications require.
+
+     Path is the standard Material Symbols "school" glyph (Apache 2.0,
+     Google), used here as a graduation-cap mark consistent with the app's
+     education theme. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="M12,3 L1,9 l11,6 9,-4.91 L21,17 h2 L23,9 Z M5,13.18 v4 L12,21 l7,-3.82 v-4 L12,17 Z" />
+</vector>

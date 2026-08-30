@@ -12,6 +12,7 @@ import 'package:ulaskelas/core/bases/widgets/confirmation_modal_dialog.dart';
 import 'package:ulaskelas/core/theme/_theme.dart';
 import 'package:ulaskelas/services/_services.dart';
 import 'package:ulaskelas/services/launch_service.dart';
+import 'package:ulaskelas/services/notification/post_login_setup.dart';
 import 'package:ulaskelas/services/versioning/check_version.dart';
 
 import 'core/environment/_environment.dart';
@@ -83,6 +84,7 @@ A new version of this app available on the store, please update into the newer v
 
   void mainPageRoute() {
     nav.replaceToMainPage();
+    onLoginCompleted();
   }
 
   void onboardingPageRoute() {

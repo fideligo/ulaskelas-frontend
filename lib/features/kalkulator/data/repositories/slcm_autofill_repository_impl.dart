@@ -8,10 +8,8 @@ class SlcmAutofillRepositoryImpl implements SlcmAutofillRepository {
   final SlcmAutofillRemoteDataSource _remoteDataSource;
 
   @override
-  Future<Decide<Failure, Parsed<SlcmSessionModel>>> createSession(
-    String givenSemester,
-  ) {
-    return apiCall(_remoteDataSource.createSession(givenSemester));
+  Future<Decide<Failure, Parsed<SlcmSessionModel>>> createSession() {
+    return apiCall(_remoteDataSource.createSession());
   }
 
   @override

@@ -26,9 +26,9 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
   /// life of the page, so its button behaves exactly as before.
   bool _isSubmitting = false;
 
-  /// The import is atomic on the backend: confirm takes no body and imports
-  /// everything the scrape matched. The list is therefore read-only, and the
-  /// controls that would edit it are hidden rather than disabled.
+  /// Splits the two ways onto this page. Adding a course by hand still has
+  /// nowhere to go on the SLCM path, and removing one is recorded back on
+  /// `AutoFillState` instead of the manual-fill basket.
   bool get _isSlcmFlow => widget.slcmSessionId != null;
 
   @override
@@ -44,12 +44,48 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
   int get _userGeneration =>
       int.tryParse(profileRM.state.profile.generation ?? '') ?? 0;
 
+  /// The semester this page is about to write into.
+  ///
+  /// On the SLCM branch the student never chose one — the backend derived it
+  /// from their NPM when the session opened and returned it on the session —
+  /// so it is read live off `AutoFillState` rather than trusted from the
+  /// constructor. Manual fill still uses the semester the picker handed over.
+  String get _givenSemester {
+    if (_isSlcmFlow) {
+      final fromSession = autoFillRM.state.givenSemester;
+      if (fromSession != null && fromSession.isNotEmpty) {
+        return fromSession;
+      }
+    }
+    return widget.givenSemester;
+  }
+
   String _getSemesterPill() {
-    return academicTermLabel(widget.givenSemester, _userGeneration);
+    return academicTermLabel(_givenSemester, _userGeneration);
   }
 
   void _onTambahMatkul() {
     Navigator.of(context).pop();
+  }
+
+  /// Drops a course from the list about to be submitted.
+  ///
+  /// The removal is mirrored onto whichever state fed this page so going back
+  /// a step shows the same list, not the one from before the deletion.
+  ///
+  /// On the SLCM path this is presentational until the backend accepts an
+  /// exclusion payload: confirm imports every course the scrape matched, so a
+  /// course removed here is still written. See
+  /// `slcm_autofill_remote_data_source.dart`.
+  void _onDeleteCourse(CourseModel course) {
+    setState(() {
+      _courses.remove(course);
+    });
+    if (_isSlcmFlow) {
+      autoFillRM.state.removeById(course.id);
+      return;
+    }
+    manualFillRM.state.unselect(course);
   }
 
   Future<void> _onBuatSemester() async {
@@ -65,10 +101,10 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
     }
 
     // First create the semester if it doesn't exist yet
-    await semesterRM.state.postSemester([widget.givenSemester]);
+    await semesterRM.state.postSemester([_givenSemester]);
 
     // Then add the selected courses to it
-    await calculatorRM.state.postCalculator(_courses, widget.givenSemester);
+    await calculatorRM.state.postCalculator(_courses, _givenSemester);
 
     // Clear the manual-fill basket so it's fresh next time
     manualFillRM.state.reset();
@@ -94,8 +130,24 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
       if (!mounted) {
         return;
       }
-      SuccessMessenger('Semester berhasil dibuat dari SLCM').show(context);
+      // Order matters. `SuccessMessenger` is a Flushbar, which pushes a route
+      // of its own; showing it first left `popUntil` popping a route that had
+      // not finished being pushed, which trips Navigator's
+      // `entry.currentState == _RouteLifecycle.popping` assertion and then
+      // leaves the navigator locked. Popping first also means the toast
+      // actually survives — `popUntil` would otherwise dismiss it instantly.
       nav.popUntil(RouteName.mainPage);
+      // Deferred a frame so the pop settles before another route is pushed,
+      // and shown on the navigator's own context because this page is gone by
+      // then, which makes `context` unusable.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navigatorContext = nav.navigatorKey.currentContext;
+        if (navigatorContext == null) {
+          return;
+        }
+        SuccessMessenger('Semester berhasil dibuat dari SLCM')
+            .show(navigatorContext);
+      });
     } on Failure catch (failure) {
       if (!mounted) {
         return;
@@ -193,7 +245,7 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                semesterFullLabel(widget.givenSemester),
+                semesterFullLabel(_givenSemester),
                 style: FontTheme.poppins16w700black().copyWith(
                   color: Colors.white,
                   fontSize: 18,
@@ -288,24 +340,14 @@ class _KonfirmasiSemesterPageState extends State<KonfirmasiSemesterPage> {
               ],
             ),
           ),
-          // No per-course delete on the SLCM path: confirm imports the whole
-          // preview, so removing a row here would not stop it being imported.
-          if (!_isSlcmFlow) ...[
-            const WidthSpace(8),
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _courses.remove(course);
-                });
-                // Keep state in sync in case user goes back
-                manualFillRM.state.unselect(course);
-              },
-              icon: const Icon(
-                Icons.delete_outline,
-                color: BaseColors.error,
-              ),
+          const WidthSpace(8),
+          IconButton(
+            onPressed: () => _onDeleteCourse(course),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: BaseColors.error,
             ),
-          ],
+          ),
         ],
       ),
     );

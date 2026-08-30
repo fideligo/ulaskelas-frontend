@@ -139,7 +139,8 @@ class _ProfilePageState extends BaseStateful<ProfilePage> {
   }
 
   Future<void> _logout() async {
-    Cleaner().cleanWhenLogout();
+    await Cleaner().cleanWhenLogout();
     unawaited(nav.replaceToSsoPage());
   }
+
 }

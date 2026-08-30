@@ -121,6 +121,26 @@ final mockComponentRM = RM.inject(
   MockComponentState.new,
 );
 
+/// Selected tab of the bottom navigation bar in `MainPage`.
+///
+/// Global rather than local widget state so that a notification deep link can
+/// switch tabs from outside the widget tree. Not auto-disposed, because the
+/// router may write to it before `MainPage` has mounted.
+final mainTabRM = RM.inject(
+  () => 0,
+  autoDisposeWhenNotUsed: false,
+);
+
+/// Indices into `MainPage`'s children. Declared alongside [mainTabRM] because
+/// both must be updated when a tab is added or reordered.
+class MainTab {
+  static const int beranda = 0;
+  static const int matkul = 1;
+  static const int tanyaTeman = 2;
+  static const int kalkulator = 3;
+  static const int profil = 4;
+}
+
 /// Semua state harus diinject di global state
 class GlobalState {
   static List<Injectable> injectDataMocks() {
@@ -148,6 +168,7 @@ class GlobalState {
       Inject(QuestionFormState.new),
       Inject(AnswerFormState.new),
       Inject(MockComponentState.new),
+      Inject<int>(() => 0),
     ];
   }
 
@@ -169,6 +190,7 @@ class GlobalState {
     Inject(QuestionFormState.new),
     Inject(AnswerFormState.new),
     Inject(MockComponentState.new),
+    Inject<int>(() => 0),
   ];
 
   static ReactiveModel<ThemeState> theme() {

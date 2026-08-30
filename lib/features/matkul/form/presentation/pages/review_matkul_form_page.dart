@@ -144,8 +144,23 @@ class _ReviewMatkulFormPageState extends BaseStateful<ReviewMatkulFormPage> {
                       }
 
                       // Submit the form
-                      await reviewFormRM.state
-                          .submitForm(course: widget.course);
+                      try {
+                        await reviewFormRM.state
+                            .submitForm(course: widget.course);
+                      } catch (_) {
+                        // submitForm folds the repository failure by
+                        // rethrowing it. Left unhandled the throw escapes
+                        // onTap, and since it also skips the navigation below,
+                        // a rejected review looks exactly like a tap that
+                        // never registered: spinner off, form unchanged, no
+                        // message anywhere.
+                        if (!mounted) return;
+                        ErrorMessenger(
+                          'Ulasan gagal dikirim. Periksa koneksi kamu dan '
+                          'pastikan isi ulasan sesuai panduan, lalu coba lagi.',
+                        ).show(context);
+                        return;
+                      }
                       await Future.delayed(const Duration(milliseconds: 150));
 
                       reviewFormRM.state.cleanForm();

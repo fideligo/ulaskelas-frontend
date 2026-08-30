@@ -254,8 +254,17 @@ class SlcmSessionModel {
   /// UUID string. Every other call in the flow is keyed on it.
   String? sessionId;
 
-  /// The semester being filled. A string, not a number — the backend rejects
-  /// anything else with `INVALID_SEMESTER`, and caps it at 20 characters.
+  /// The semester being filled, as the backend resolved it.
+  ///
+  /// The app no longer sends one: `createSession` posts an empty body and the
+  /// backend derives the student's current semester from their NPM entry year
+  /// and the running UI academic period, then echoes it here on the create
+  /// response and on every poll. This is the only place the semester comes
+  /// from now, so the review and confirmation screens label themselves off it.
+  ///
+  /// A string, not a number — the backend caps it at 20 characters and answers
+  /// `INVALID_SEMESTER` for anything else. Null only if the field is missing
+  /// from a response, which the display helpers fall back for.
   String? givenSemester;
 
   SlcmSessionStatus status = SlcmSessionStatus.unknown;
