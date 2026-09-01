@@ -74,4 +74,29 @@ class BaseColors {
   static const Color bronze1 = Color(0xFFCD7F32);
   static const Color bronze2 = Color(0xFFAE5906);
   static const Color bronze3 = Color(0xFFA15810);
+
+  // Blue Colors
+  static const Color blue1 = Color(0xFF1A73E8);
+  static const Color blue2 = Color(0xFF0A4C96);
+
+  // Purple Colors
+  static const Color purpleHearth2 = Color(0xFFC9CEFC);
+
+  // Gradient Colors
+
+  /// This gradient color set is used in some widgets
+  /// that require AI-like gradient color.
+  ///
+  /// Use this LinearGradient declaration as an example:
+  /// ```dart
+  /// LinearGradient(
+  ///   begin: Alignment.topCenter,
+  ///   end: Alignment.bottomCenter,
+  ///   colors: BaseColors.autoSystemColor,
+  /// );
+  /// ```
+  static const autoSystemColor = [
+    Color(0xFFD293FF),
+    Color(0xFF3F4FB4),
+  ];
 }

@@ -78,6 +78,7 @@ class NavigationServiceState implements Navigation {
   }
 
   Future<bool?> goToFilterPage() {
+    MixpanelService.track('open_course_filter');
     return nav.push<bool>(
       const FilterPage(),
       RouteName.mainPage,
@@ -88,6 +89,7 @@ class NavigationServiceState implements Navigation {
     int courseId,
     String courseCode,
   ) {
+    MixpanelService.track('view_course');
     return nav.push<void>(
       DetailMatkulPage(
         courseId: courseId,
@@ -116,7 +118,17 @@ class NavigationServiceState implements Navigation {
   Future<void> goToAllReviewMatkulPage({
     required int courseId,
     required String courseCode,
+    required CourseModel course,
   }) {
+    MixpanelService.track(
+      'view_all_reviews',
+      params: {
+        'course_id': course.code.toString(),
+        'course_name': course.name.toString(),
+        'review_count': course.reviewCount.toString(),
+        'course_rating_avg': course.ratingAverage.toString(),
+      },
+    );
     return nav.push<void>(
       AllReviewMatkulPage(
         courseId: courseId,
@@ -134,6 +146,7 @@ class NavigationServiceState implements Navigation {
   }
 
   Future<void> goToHomeDaftarMatkul() {
+    MixpanelService.track('view_this_semester_courses');
     return nav.push<void>(
       const HomeCourseListPage(),
       RouteName.homeDaftarMatkul,
@@ -141,6 +154,7 @@ class NavigationServiceState implements Navigation {
   }
 
   Future<void> goToHomeDaftarUlasan() {
+    MixpanelService.track('view_all_reviews');
     return nav.push<void>(
       const HomeDaftarUlasanPage(),
       RouteName.homeDaftarUlasan,
@@ -189,42 +203,123 @@ class NavigationServiceState implements Navigation {
     );
   }
 
-  Future<void> goToSearchCourseCalculatorPage() {
+  Future<void> goToSemesterPage({
+    required String givenSemester,
+    required double semesterGPA,
+    required int totalSKS,
+  }) {
     return nav.push<void>(
-      const SearchCourseCalculator(),
-      RouteName.searchCourseCalculator,
+      SemesterPage(
+        givenSemester: givenSemester,
+        semesterGPA: semesterGPA,
+        totalSKS: totalSKS,
+      ),
+      RouteName.semesterPage,
+    );
+  }
+
+  Future<void> goToAddSemesterPage() {
+    return nav.push<void>(
+      const AddSemesterPage(),
+      RouteName.addSemesterPage,
+    );
+  }
+
+  /// Opens the SLCM autofill flow. Takes no semester — the backend picks the
+  /// one the student is currently in and reports it back on the session.
+  Future<void> goToAutoFillPage() {
+    return nav.push<void>(
+      const AutoFillPage(),
+      RouteName.autoFillPage,
+    );
+  }
+
+  /// Opens the SLCM login WebView. The future completes when the page is
+  /// popped, so callers that need to keep working while the student logs in
+  /// must not await it.
+  Future<void> goToSlcmWebViewPage(String popupUrl) {
+    return nav.push<void>(
+      SlcmWebViewPage(popupUrl: popupUrl),
+      RouteName.slcmWebViewPage,
+    );
+  }
+
+  Future<void> goToManualFillPage(String givenSemester) {
+    MixpanelService.track('calculator_add_course');
+    return nav.push<void>(
+      ManualFillPage(givenSemester: givenSemester),
+      RouteName.manualFillPage,
+    );
+  }
+
+  /// [slcmSessionId] marks the SLCM autofill flow. Left null by manual fill,
+  /// which keeps the page on its existing behaviour.
+  Future<void> goToConfirmSemesterPage({
+    required String givenSemester,
+    required List<CourseModel> courses,
+    String? slcmSessionId,
+  }) {
+    return nav.push<void>(
+      KonfirmasiSemesterPage(
+        givenSemester: givenSemester,
+        selectedCourses: courses,
+        slcmSessionId: slcmSessionId,
+      ),
+      RouteName.confirmSemesterPage,
     );
   }
 
   Future<void> goToComponentCalculatorPage({
     required int calculatorId,
+    required int courseId,
+    required String givenSemester,
     required String courseName,
     required double totalScore,
     required double totalPercentage,
+    required int courseSKS,
   }) {
+    MixpanelService.track(
+      'calculator_view_course',
+      params: {
+        'course_id': courseName,
+        'final_letter_grade': getFinalGrade(
+          totalScore,
+        ),
+        'final_grade': totalScore.toString(),
+      },
+    );
     return nav.push<void>(
       CalculatorComponentPage(
+        givenSemester: givenSemester,
         calculatorId: calculatorId,
+        courseId: courseId,
         courseName: courseName,
         totalScore: totalScore,
         totalPercentage: totalPercentage,
+        courseSKS: courseSKS,
       ),
       RouteName.calculatorComponent,
     );
   }
 
   Future<void> goToComponentFormPage({
+    required String givenSemester,
     required int calculatorId,
+    required int courseId,
     required String courseName,
     required double totalScore,
     required double totalPercentage,
+    required int courseSKS,
   }) {
     return nav.push<void>(
       ComponentFormPage(
+        givenSemester: givenSemester,
+        courseId: courseId,
         calculatorId: calculatorId,
         courseName: courseName,
         totalScore: totalScore,
         totalPercentage: totalPercentage,
+        courseSKS: courseSKS,
       ),
       RouteName.componentFormPage,
     );
@@ -232,16 +327,22 @@ class NavigationServiceState implements Navigation {
 
   Future<void> replaceToComponentPage({
     required int calculatorId,
+    required int courseId,
+    required String givenSemester,
     required String courseName,
     required double totalScore,
     required double totalPercentage,
+    required int courseSKS,
   }) {
     return nav.pushReplacement<void, void>(
       CalculatorComponentPage(
+        givenSemester: givenSemester,
         calculatorId: calculatorId,
+        courseId: courseId,
         courseName: courseName,
         totalScore: totalScore,
         totalPercentage: totalPercentage,
+        courseSKS: courseSKS,
       ),
       RouteName.calculatorComponent,
     );
@@ -249,6 +350,8 @@ class NavigationServiceState implements Navigation {
 
   Future<void> goToEditComponentPage({
     required int id,
+    required String givenSemester,
+    required int courseId,
     required int calculatorId,
     required String courseName,
     required double totalScore,
@@ -256,10 +359,13 @@ class NavigationServiceState implements Navigation {
     required String componentName,
     required double componentScore,
     required double componentWeight,
+    required int courseSKS,
   }) {
     return nav.push<void>(
       EditComponentPage(
         id: id,
+        givenSemester: givenSemester,
+        courseId: courseId,
         calculatorId: calculatorId,
         courseName: courseName,
         totalScore: totalScore,
@@ -267,8 +373,63 @@ class NavigationServiceState implements Navigation {
         componentName: componentName,
         componentScore: componentScore,
         componentWeight: componentWeight,
+        courseSKS: courseSKS,
       ),
       RouteName.editComponent,
+    );
+  }
+
+  Future<void> goToAddQuestionPage() {
+    return nav.push<void>(const AddQuestionPage());
+  }
+
+  Future<void> goToDetailQuestionPage(
+    QuestionModel model, {
+    bool toReply = false,
+    bool fromSearch = false,
+  }) {
+    return nav.push<void>(DetailQuestionPage(
+      model: model,
+      toReply: toReply,
+      fromSearch: fromSearch,
+    ));
+  }
+
+  Future<void> goToSearchCourseRadioPick() {
+    return nav.push<void>(const SearchCourseRadioPicker());
+  }
+
+  Future<void> goToViewImagePage(ImageProvider imageFile,
+      {String? imageTag, bool enableImagePreview = false}) {
+    return nav.push<void>(
+      ViewImagePage(
+        imageFile: imageFile,
+        imageTag: imageTag,
+        enableImagePreview: enableImagePreview,
+      ),
+    );
+  }
+
+  /// `filterTarget` decide which one will be filtered.
+  ///
+  /// 0 = All Question
+  ///
+  /// 1 = History Question
+  ///
+  /// 2 = Search Page
+  Future<void> goToSearchQuestionPage({required int filterTarget}) {
+    return nav.push<void>(
+      SearchQuestionPage(
+        filterTarget: filterTarget,
+      ),
+      RouteName.searchQuestion,
+    );
+  }
+
+  Future<void> replaceToTanyaTemanPage() {
+    return nav.pushReplacement<void, void>(
+      const TanyaTemanPage(),
+      RouteName.tanyaTeman,
     );
   }
 }

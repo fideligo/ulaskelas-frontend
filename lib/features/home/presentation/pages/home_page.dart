@@ -4,11 +4,11 @@ part of '_pages.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
-    required this.onSeeAllCourse,
-    Key? key,
-  }) : super(key: key);
+    required this.onOpenCalculator,
+    super.key,
+  });
 
-  final VoidCallback onSeeAllCourse;
+  final VoidCallback onOpenCalculator;
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -44,15 +44,17 @@ class _HomePageState extends BaseStateful<HomePage> {
     return AppBar(
       backgroundColor: BaseColors.white,
       title: Container(
-        width: MediaQuery.of(context).size.width / 3,
-        padding: const EdgeInsets.only(left: 10),
-        child: Image.asset(
-          ImageConst.primaryLogo,
-          fit: BoxFit.fitWidth,
+        width: MediaQuery.of(context).size.width / 2.75,
+        padding: const EdgeInsets.only(left: 15),
+        child: Transform.scale(
+          scale: 1.2,
+          child: SvgPicture.asset('assets/icons/temankuliahTxt.svg'),
         ),
       ),
       centerTitle: false,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
     );
   }
 
@@ -72,7 +74,6 @@ class _HomePageState extends BaseStateful<HomePage> {
               padding: const EdgeInsets.only(
                 left: 20,
                 right: 20,
-                bottom: 10,
               ),
               alignment: Alignment.centerLeft,
               child: OnReactive(
@@ -82,14 +83,27 @@ class _HomePageState extends BaseStateful<HomePage> {
                 ),
               ),
             ),
+            Builder(
+              builder: (context) {
+                if (!(Pref.getBool('doneAppTour') ?? false)) {
+                  return const SizedBox();
+                }
+                return AppTourCard(
+                  onTap: () {
+                    Pref.saveBool('doneAppTour', value: false);
+                    showInAppTourOpening(context);
+                  },
+                );
+              },
+            ),
             Container(
               decoration: BoxDecoration(
                 borderRadius: const BorderRadius.all(Radius.circular(6)),
                 border: Border.all(color: BaseColors.primary, width: 2),
               ),
-              margin: const EdgeInsets.all(20),
+              margin: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               child: InkWell(
-                onTap: () => widget.onSeeAllCourse.call(),
+                onTap: () => widget.onOpenCalculator.call(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -101,16 +115,16 @@ class _HomePageState extends BaseStateful<HomePage> {
                       Row(
                         children: [
                           Icon(
-                            Icons.list_alt_outlined,
+                            Icons.list_alt_rounded,
                             color: BaseColors.primaryColor,
                           ),
                           const SizedBox(
                             width: 10,
                           ),
                           Text(
-                            'Lihat Semua Mata Kuliah',
+                            'Buka Kalkulator',
                             style: FontTheme.poppins14w400purple(),
-                          )
+                          ),
                         ],
                       ),
                       Icon(
@@ -141,7 +155,7 @@ class _HomePageState extends BaseStateful<HomePage> {
                         'Lihat Semua',
                         style: FontTheme.poppins13w400purple(),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -205,6 +219,7 @@ class _HomePageState extends BaseStateful<HomePage> {
                 );
               },
             ),
+            const HeightSpace(8),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -224,7 +239,7 @@ class _HomePageState extends BaseStateful<HomePage> {
                         'Lihat Semua',
                         style: FontTheme.poppins13w400purple(),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -260,10 +275,14 @@ class _HomePageState extends BaseStateful<HomePage> {
                     final review = data.summaries[i];
                     return CardMatkulReview(
                       review: review,
-                      onTap: () => nav.goToDetailMatkulPage(
-                        review.course!,
-                        review.courseCode.toString(),
-                      ),
+                      onTap: () {
+                        nav.goToDetailMatkulPage(
+                          review.course!,
+                          review.courseCode.toString(),
+                        );
+
+                        MixpanelService.track('view_my_review');
+                      },
                     );
                   },
                 );

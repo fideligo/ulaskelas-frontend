@@ -3,7 +3,7 @@ part of '_states.dart';
 abstract class StateCleaner {
   void cleanState();
 
-  void cleanWhenLogout();
+  Future<void> cleanWhenLogout();
 }
 
 class Cleaner implements StateCleaner {
@@ -11,9 +11,13 @@ class Cleaner implements StateCleaner {
   void cleanState() {}
 
   @override
-  void cleanWhenLogout() {
+  Future<void> cleanWhenLogout() async {
     for (final key in PreferencesKeys.removableKeys) {
-      Pref.removeKey(key);
+      await Pref.removeKey(key);
     }
+    // Detaches the device so a shared phone stops receiving the previous
+    // account's reminders. FcmClient handles its own failures, so an
+    // unavailable network cannot block logout.
+    await FcmClient.deleteToken();
   }
 }

@@ -4,8 +4,8 @@ part of '_pages.dart';
 
 class SearchCoursePage extends StatefulWidget {
   const SearchCoursePage({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   _SearchCoursePageState createState() => _SearchCoursePageState();
@@ -25,11 +25,26 @@ class _SearchCoursePageState
         searchCourseRM.setState((s) => s.addToHistory(controller.text));
       }
     });
+    searchCourseRM.state.controller.clear();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if ((Pref.getBool('doneAppTour') == false ||
+              Pref.getBool('doneAppTour') == null) &&
+          !backFromTanyaTeman) {
+        showcaseSearchPage();
+      }
+    });
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    filterRM.setState((s) => s.reset());
+    focusNode.dispose();
     super.dispose();
   }
 
@@ -60,49 +75,60 @@ class _SearchCoursePageState
     ReactiveModel<SearchCourseState> k,
     SizingInformation sizeInfo,
   ) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 10,
-          ),
-          child: Column(
-            children: [
-              OnReactive(
-                () => SearchField(
-                  hintText: 'Cari mata kuliah',
-                  focusNode: focusNode,
-                  controller: searchCourseRM.state.controller,
-                  onClear: () {
-                    focusNode.unfocus();
-                    searchCourseRM.state.controller.clear();
-                  },
-                  onFieldSubmitted: (val) {
-                    searchCourseRM.state.addToHistory(val);
-                  },
-                  onChange: onQueryChanged,
-                ),
+    return ShowCaseWidget(
+      builder: (context) {
+        searchPageContext = context;
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 10,
               ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: OnReactive(() {
-            if (focusNode.hasFocus &&
-                searchCourseRM.state.controller.text.isEmpty) {
-              return _buildHistory();
-            } else {
-              return SearchListView(
-                refreshIndicatorKey: refreshIndicatorKey,
-                scrollController: scrollController,
-                onScroll: onScroll,
-                onRefresh: retrieveData,
-              );
-            }
-          }),
-        ),
-      ],
+              child: Column(
+                children: [
+                  ShowcaseWrapper(
+                    showcaseKey: inAppTourKeys.searchBarSP,
+                    targetBorderRadius: BorderRadius.circular(10),
+                    container: searchBarSPShowcase(context),
+                    child: OnReactive(
+                      () => SearchField(
+                        hintText: 'Cari mata kuliah',
+                        focusNode: focusNode,
+                        controller: searchCourseRM.state.controller,
+                        onClear: () {
+                          focusNode.unfocus();
+                          searchCourseRM.state.controller.clear();
+                          onQueryChanged('');
+                          searchCourseRM.notify();
+                        },
+                        onFieldSubmitted: (val) =>
+                            searchCourseRM.state.addToHistory(val),
+                        onChange: onQueryChanged,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: OnReactive(() {
+                if (focusNode.hasFocus &&
+                    searchCourseRM.state.controller.text.isEmpty) {
+                  return _buildHistory();
+                } else {
+                  return SearchListView(
+                    refreshIndicatorKey: refreshIndicatorKey,
+                    scrollController: scrollController,
+                    onScroll: onScroll,
+                    onRefresh: retrieveData,
+                  );
+                }
+              }),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -156,9 +182,13 @@ class _SearchCoursePageState
     _debounce = Timer(const Duration(milliseconds: 1000), () {
       final query = QuerySearchCourse(name: val);
       // final query = QuerySearchCourse();
-      searchCourseRM.state
-          .searchMatkul(query)
-          .then((value) => searchCourseRM.notify());
+      searchCourseRM.setState((s) {
+        return searchCourseRM.state.searchMatkul(query).then(
+              (value) => searchCourseRM.state.retrieveMoreData(query).then(
+                    (value) => searchCourseRM.notify(),
+                  ),
+            );
+      });
     });
   }
 

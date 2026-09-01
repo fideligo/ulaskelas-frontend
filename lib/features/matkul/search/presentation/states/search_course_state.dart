@@ -5,11 +5,11 @@ part of '_states.dart';
 class SearchCourseState
     implements FutureState<SearchCourseState, QuerySearchCourse> {
   SearchCourseState() {
-    final _remoteDataSource = CourseRemoteDataSourceImpl();
-    final _localDataSource = CourseLocalDataSourceImpl();
+    final remoteDataSource = CourseRemoteDataSourceImpl();
+    final localDataSource = CourseLocalDataSourceImpl();
     _repo = CourseRepositoryImpl(
-      _remoteDataSource,
-      _localDataSource,
+      remoteDataSource,
+      localDataSource,
     );
   }
 
@@ -36,32 +36,7 @@ class SearchCourseState
 
   /// Courses getter with dummy data at default.
   List<CourseModel> get courses => _courses ?? [];
-  List<CourseModel> get filteredCourses {
-    return (_courses ?? [])
-        .where(
-          (element) =>
-              ((element.name
-                          ?.toLowerCase()
-                          .contains(controller.text.toLowerCase()) ??
-                      false) ||
-                  (element.code
-                          ?.toLowerCase()
-                          .contains(controller.text.toLowerCase()) ??
-                      false) ||
-                  (element.description
-                          ?.toLowerCase()
-                          .contains(controller.text.toLowerCase()) ??
-                      false)) &&
-              (!filterRM.state.hasFilter ||
-                  (filterRM.state.selectedType
-                          .contains(element.codeDesc.toString()) ||
-                      filterRM.state.selectedSks
-                          .contains(element.sks.toString()) ||
-                      filterRM.state.selectedSemester
-                          .contains(element.term.toString()))),
-        )
-        .toList();
-  }
+
 
   ListQueue<String> get history => _history ?? ListQueue();
 
@@ -84,6 +59,7 @@ class SearchCourseState
   @override
   Future<void> retrieveData(QuerySearchCourse query) async {
     await searchMatkul(query);
+    await retrieveMoreData(query);
   }
 
   /// Advanced searching combine stateful & stateless search data.
@@ -113,7 +89,6 @@ class SearchCourseState
       final lessThanLimit = result.data.length < 10;
       _hasReachedMax = result.data.isEmpty || lessThanLimit;
       // _hasReachedMax = true;
-      // Prevent duplicate record
       _courses = result.data;
       // filterCourse(result.data);
     });
@@ -138,8 +113,19 @@ class SearchCourseState
       final lessThanLimit = result.data.length < query.limit;
       _hasReachedMax = result.data.isEmpty || lessThanLimit;
 
+      final lengthBefore = _courses?.length ?? 0;
+
       // Prevent duplicate record
       filterCourse(result.data);
+
+      final lengthAfter = _courses?.length ?? 0;
+
+      // FIX: If backend returned items, but all of them were duplicates
+      // (no new items added), force hasReachedMax to true to prevent
+      // infinite loading loop.
+      if (result.data.isNotEmpty && lengthBefore == lengthAfter) {
+        _hasReachedMax = true;
+      }
     });
   }
 
@@ -161,6 +147,12 @@ class SearchCourseState
     if (history.length == 11) {
       _history?.removeLast();
     }
+    MixpanelService.track(
+      'search_course',
+      params: {
+        'query': query,
+      },
+    );
     // TODO(pawpaw): save to local storage
   }
 
@@ -168,5 +160,56 @@ class SearchCourseState
   void clearHistory() {
     _history?.clear();
     // TODO(pawpaw): clear from local storage
+  }
+
+  //////////////////////////////
+  /// For Calculator Feature ///
+  //////////////////////////////
+
+  final List<CourseModel> _selectedCourses = [];
+
+  List<CourseModel> get selectedCourses => _selectedCourses;
+
+  void addCourse(CourseModel course) {
+    if (_selectedCourses.contains(course)) {
+      return;
+    }
+    _selectedCourses.add(course);
+
+    searchCourseRM.notify();
+  }
+
+  void removeCourse(CourseModel course) {
+    if (!_selectedCourses.contains(course)) {
+      return;
+    }
+    _selectedCourses.removeWhere((element) => element.id == course.id);
+
+    searchCourseRM.notify();
+  }
+
+  void clearSelectedCourses() {
+    _selectedCourses.clear();
+  }
+
+  void addCourseRadioType(CourseModel course) {
+    if (_selectedCourses.isNotEmpty) {
+      if (_selectedCourses[0].id == course.id) {
+        _selectedCourses.clear();
+      } else {
+        _selectedCourses
+          ..clear()
+          ..add(course);
+      }
+    } else {
+      _selectedCourses
+        ..clear()
+        ..add(course);
+    }
+    for (final i in _selectedCourses) {
+      print(i.name);
+    }
+
+    searchCourseRM.notify();
   }
 }

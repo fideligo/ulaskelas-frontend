@@ -76,7 +76,12 @@ class AuthState {
           return;
         }
         unawaited(nav.replaceToMainPage());
-        SuccessMessenger('Login Successful').show(ctx!);
+        onLoginCompleted();
+        // Same deferral as `AuthenticationPage._ssoLogin`: raising the bar
+        // inside the navigation transaction leaves the navigator locked.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          SuccessMessenger('Login Successful').show(ctx!);
+        });
       }
     }
   }
@@ -91,7 +96,7 @@ class AuthState {
       path: '/static.html',
     );
 
-    final url = '${Endpoints.sso}/?redirect_url=${redirectUri.toString()}';
+    final url = '${Endpoints.sso}/?redirect_url=$redirectUri';
     Logger().w(Uri.parse(url).query);
 
     Logger().w(redirectUri.toString());

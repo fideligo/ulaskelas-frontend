@@ -4,12 +4,12 @@ part of '_widgets.dart';
 
 class SearchListView extends StatelessWidget {
   const SearchListView({
-    Key? key,
     required this.refreshIndicatorKey,
     required this.scrollController,
     required this.onScroll,
     required this.onRefresh,
-  }) : super(key: key);
+    super.key,
+  });
 
   final GlobalKey<RefreshIndicatorState> refreshIndicatorKey;
   final ScrollController scrollController;
@@ -36,15 +36,24 @@ class SearchListView extends StatelessWidget {
                 StateBuilder(
                   observe: () => filterRM,
                   builder: (context, snapshot) {
-                    return FilterButton(
-                      hasFilter: filterRM.state.hasFilter,
-                      text: 'Filter',
-                      onPressed: () async {
-                        await nav.goToFilterPage();
-                        if (filterRM.state.hasFilter) {
-                          await refreshIndicatorKey.currentState?.show();
-                        }
-                      },
+                    return ShowcaseWrapper(
+                      showcaseKey: inAppTourKeys.filterSP,
+                      targetPadding: const EdgeInsets.all(5),
+                      targetBorderRadius: BorderRadius.circular(10),
+                      height: 200,
+                      width: 310,
+                      container: filterSPShowcase(context),
+                      child: FilterButton(
+                        hasFilter: filterRM.state.hasFilter,
+                        text: 'Filter',
+                        onPressed: () async {
+                          await nav.goToFilterPage();
+
+                          if (filterRM.state.hasFilter) {
+                            await refreshIndicatorKey.currentState?.show();
+                          }
+                        },
+                      ),
                     );
                   },
                 ),
@@ -116,6 +125,29 @@ Mata kuliah yang kamu cari tidak ada di aplikasi. Silakan coba lagi dengan kata 
                       return const CircleLoading(size: 25);
                     }
                     final course = courses[i];
+
+                    // NOTE: Target basdat - make auto find & scroll kapan2
+                    if (course.code == 'CSGE602070') {
+                      return ShowcaseWrapper(
+                        showcaseKey: inAppTourKeys.coursecardSP,
+                        targetBorderRadius: BorderRadius.circular(10),
+                        onTargetClick: () {
+                          ShowCaseWidget.of(context).dismiss();
+                          nav.goToDetailMatkulPage(
+                            course.id!,
+                            course.code!,
+                          );
+                        },
+                        container: cardCourseSPShowcase(context, course),
+                        child: CardCourse(
+                          model: course,
+                          onTap: () => nav.goToDetailMatkulPage(
+                            course.id!,
+                            course.code!,
+                          ),
+                        ),
+                      );
+                    }
                     return CardCourse(
                       model: course,
                       onTap: () => nav.goToDetailMatkulPage(

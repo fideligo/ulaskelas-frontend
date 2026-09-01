@@ -6,32 +6,38 @@ Future<Decide<Failure, T>> apiCall<T>(Future<T> t) async {
   try {
     final futureCall = await t;
     return Right(futureCall);
-  } on DioError catch (e) {
-    Logger().wtf(e.error.runtimeType);
-    Logger().wtf(e.error.toString());
+  } on DioException catch (e) {
+    if (e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.connectionTimeout) {
+      Logger().e('Error: Dio Timeout Detected');
+      return Left(TimeoutFailure());
+    }
+
+    Logger().f(e.error.runtimeType);
+    Logger().f(e.error.toString());
     if (e.error is ArgumentError) {
-      final error = e.error as ArgumentError;
+      final error = e.error! as ArgumentError;
       return Left(GeneralFailure(message: error.message));
     } else if (e.error is SocketException) {
       Logger().e('Error: No Internet Connection');
       return Left(NetworkFailure(message: 'No Internet Connection'));
-    } else if (e.error is TimeoutException) {
-      Logger().e('Error: Timeout');
-      return Left(TimeoutFailure());
     } else if (e.error is FormatException) {
       /// Case json not match || attribute name changed from BE
       Logger().e('Error: Format from front end error');
       return Left(GeneralFailure(message: 'Format Exception'));
     } else if ((e.response?.statusCode ?? 0) == 403) {
       Logger().e('Unauthorized');
-      Cleaner().cleanWhenLogout();
+      await Cleaner().cleanWhenLogout();
       unawaited(nav.replaceToSsoPage());
       return Left(GeneralFailure(message: 'Unauthorize'));
     } else if ((e.response?.statusCode ?? 0) == 404) {
       Logger().e('Not Found Failure');
       return Left(
         NotFoundFailure(
-          message: e.response?.data['message'] ?? 'Not Found',
+          message: e.response?.data is Map<String, dynamic>
+              ? e.response?.data['message'] ?? 'Not Found'
+              : 'Not Found',
         ),
       );
     } else {

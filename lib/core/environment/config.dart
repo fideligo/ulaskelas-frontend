@@ -20,11 +20,25 @@ class Config {
     appName = flavor.value;
     assetsPath = baseConfig.assetAbsolutePath;
     packageName = 'com.ristek.ulaskelas';
-    //todo grouping
+    // TODO(any): grouping
     imagesPath = '${assetsPath!}/images';
     iconsPath = '${assetsPath!}/icons';
 
-    await Firebase.initializeApp();
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyAGSodkq-bKUjO8yhJ37JL0QLncB7lmS6g",
+          authDomain: "ulas-kelas.firebaseapp.com",
+          projectId: "ulas-kelas",
+          storageBucket: "ulas-kelas.appspot.com",
+          messagingSenderId: "178086714441",
+          appId: "1:178086714441:web:6796c3106a806de2cc7398",
+          measurementId: "G-PNTR7JWHSZ",
+        ),
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
     // try {
     //
     // }
@@ -38,9 +52,12 @@ class Config {
       await HiveDataBaseService.init();
     }
     await Pref.init();
+    await MixpanelService.init();
 
-    // TODO(fauzi): Implement notification plugin
-    // await notificationPlugin.init();
+    // Must follow Pref.init, since BadgeService reads the persisted count on
+    // start. Permission is not requested here; it is deferred until after auth
+    // so that the OS sheet never appears over the splash screen.
+    await NotificationService.init();
 
     ///Initialize Future variables
 
@@ -55,6 +72,7 @@ class Config {
   }
 
   static bool get isDevelopment => appFlavor == Flavor.development;
+
   static BaseConfig get baseConfig => _baseConfig()!;
 
   static BaseConfig? _baseConfig() {
@@ -74,9 +92,10 @@ class Config {
 
 class BaseConfig {
   const BaseConfig({
-    this.assetAbsolutePath = Constants.assetPath,
     required this.endpoints,
+    this.assetAbsolutePath = Constants.assetPath,
   });
+
   final String assetAbsolutePath;
   final BaseEndpoints endpoints;
 }

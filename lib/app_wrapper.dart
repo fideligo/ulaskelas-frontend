@@ -5,17 +5,20 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:ristek_material_component/ristek_material_component.dart';
 import 'package:ulaskelas/core/_core.dart';
 import 'package:ulaskelas/core/bases/widgets/confirmation_modal_dialog.dart';
 import 'package:ulaskelas/core/theme/_theme.dart';
+import 'package:ulaskelas/services/_services.dart';
 import 'package:ulaskelas/services/launch_service.dart';
+import 'package:ulaskelas/services/notification/post_login_setup.dart';
 import 'package:ulaskelas/services/versioning/check_version.dart';
 
 import 'core/environment/_environment.dart';
 
 class AppWrapper extends StatefulWidget {
-  const AppWrapper({Key? key}) : super(key: key);
+  const AppWrapper({super.key});
 
   @override
   _AppWrapperState createState() => _AppWrapperState();
@@ -27,6 +30,7 @@ class _AppWrapperState extends State<AppWrapper> {
   @override
   void initState() {
     super.initState();
+    MixpanelService.track('open_app');
     splashTime();
   }
 
@@ -80,6 +84,7 @@ A new version of this app available on the store, please update into the newer v
 
   void mainPageRoute() {
     nav.replaceToMainPage();
+    onLoginCompleted();
   }
 
   void onboardingPageRoute() {
@@ -89,14 +94,15 @@ A new version of this app available on the store, please update into the newer v
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BaseColors.purpleHearth,
+      backgroundColor: BaseColors.white,
       body: Stack(
         children: [
           Center(
-            child: Image.asset(
-              '${Constants.imagePath}/logo_splash.png',
-              width: 160,
-              height: 160,
+            child: Transform.scale(
+              scale: 0.6,
+              child: SvgPicture.asset(
+                'assets/icons/temankuliah.svg',
+              ),
             ),
           ),
           Padding(
@@ -107,11 +113,11 @@ A new version of this app available on the store, please update into the newer v
                 children: [
                   RichText(
                     text: TextSpan(
-                      text: 'Ulas',
-                      style: FontTheme.poppins20w700white(),
+                      text: 'Teman',
+                      style: FontTheme.poppins20w700black(),
                       children: const <TextSpan>[
                         TextSpan(
-                          text: 'Kelas',
+                          text: 'Kuliah',
                           style: TextStyle(
                             color: BaseColors.malibu,
                           ),
@@ -121,8 +127,8 @@ A new version of this app available on the store, please update into the newer v
                   ),
                   Text(
                     'by RISTEK Fasilkom UI',
-                    style: FontTheme.poppins14w500white(),
-                  )
+                    style: FontTheme.poppins14w500black(),
+                  ),
                 ],
               ),
             ),

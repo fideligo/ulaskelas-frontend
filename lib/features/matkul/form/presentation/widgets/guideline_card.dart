@@ -1,7 +1,7 @@
 part of '_widgets.dart';
 
 class GuidelineCard extends StatelessWidget {
-  const GuidelineCard({Key? key}) : super(key: key);
+  const GuidelineCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +26,7 @@ class GuidelineCard extends StatelessWidget {
                   children: <TextSpan>[
                     const TextSpan(
                       text: 'Sebelum menuliskan review, pastikan kamu sudah '
-                          'membaca aturan yang berlaku dalam UlasKelas ',
+                          'membaca aturan yang berlaku dalam TemanKuliah ',
                     ),
                     TextSpan(
                       text: 'di sini',

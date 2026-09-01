@@ -1,6 +1,7 @@
 import 'dart:math';
 
 class CalculatorModel {
+  String? givenSemester;
   int? id;
   String? user;
   int? courseId;
@@ -8,30 +9,41 @@ class CalculatorModel {
   double? totalScore;
   double? totalPercentage;
   String? shortName;
+  int? courseSKS;
+  String? courseCode;
+  String? courseCodeDesc;
 
-  CalculatorModel(
-      {this.id,
-        this.user,
-        this.courseId,
-        this.courseName,
-        this.totalScore,
-        this.totalPercentage,
-        this.shortName,
-      });
+  CalculatorModel({
+    this.givenSemester,
+    this.id,
+    this.user,
+    this.courseId,
+    this.courseName,
+    this.totalScore,
+    this.totalPercentage,
+    this.shortName,
+    this.courseSKS,
+    this.courseCode,
+    this.courseCodeDesc,
+  });
 
-  CalculatorModel.fromJson(Map<String, dynamic> json) {
+  CalculatorModel.fromJson(Map<String, dynamic> json, String givenSemester) {
+    givenSemester = givenSemester;
     id = json['id'];
     user = json['user'];
     courseId = json['course_id'];
     courseName = json['course_name'];
     totalScore = json['total_score'];
     totalPercentage = json['total_percentage'];
+    courseSKS = json['course_sks'];
+    courseCode = json['course_code'];
+    courseCodeDesc = json['course_code_desc'] ?? courseCode;
     if (courseName?.isNotEmpty ?? false) {
       shortName = courseName?.split(' ').fold<String>(
-        '',
+            '',
             (previousValue, element) =>
-        previousValue + element.substring(0, min(element.length, 1)),
-      );
+                previousValue + element.substring(0, min(element.length, 1)),
+          );
       shortName = shortName!.substring(0, min(shortName!.length, 2));
     }
   }
@@ -44,6 +56,9 @@ class CalculatorModel {
     data['course_name'] = courseName;
     data['total_score'] = totalScore;
     data['total_percentage'] = totalPercentage;
+    data['course_sks'] = courseSKS;
+    data['course_code'] = courseCode;
+    data['course_code_desc'] = courseCodeDesc;
     return data;
   }
 }

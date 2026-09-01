@@ -6,13 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:ristek_material_component/ristek_material_component.dart';
 import 'package:ulaskelas/core/bases/states/_states.dart';
 import 'package:ulaskelas/core/theme/_theme.dart';
+import 'package:ulaskelas/core/utils/in_app_tour/showcase_flow.dart';
 import 'package:ulaskelas/features/matkul/search/presentation/widgets/_widgets.dart';
 import 'package:ulaskelas/features/profile/presentation/widgets/profile_data.dart';
+import 'package:ulaskelas/services/_services.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -21,6 +23,17 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends BaseStateful<ProfilePage> {
   @override
   void init() {}
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Pref.getBool('doneAppTour') == false ||
+          Pref.getBool('doneAppTour') == null) {
+        showInAppTourClosing(context);
+      }
+    });
+  }
 
   @override
   ScaffoldAttribute buildAttribute() {
@@ -46,34 +59,32 @@ class _ProfilePageState extends BaseStateful<ProfilePage> {
         vertical: 10,
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          const SizedBox(height: 42),
-          Icon(
-            Icons.account_circle,
-            size: 140,
-            color: Colors.grey[300],
-          ),
-          // CircleAvatar(
-          //   radius: 100,
-          //   backgroundColor: Colors.grey[300],
-          // ),
-          const SizedBox(height: 34),
-          ProfileData(
-            'Nama',
-            profileRM.state.profile.name.toString(),
-          ),
-          // TODO(pawpaw): angkatan.
-          ProfileData(
-            'Angkatan',
-            profileRM.state.profile.generation.toString(),
-          ),
-          ProfileData(
-            'Jurusan',
-            profileRM.state.profile.studyProgram.toString(),
-          ),
-          const Expanded(
-            child: SizedBox(),
+        children: [
+          Expanded(
+            child: ListView(
+              children: <Widget>[
+                const SizedBox(height: 42),
+                Icon(
+                  Icons.account_circle,
+                  size: 140,
+                  color: Colors.grey[300],
+                ),
+                const SizedBox(height: 24),
+                ProfileData(
+                  'Nama',
+                  profileRM.state.profile.name.toString(),
+                ),
+                // TODO(pawpaw): angkatan.
+                ProfileData(
+                  'Angkatan',
+                  profileRM.state.profile.generation.toString(),
+                ),
+                ProfileData(
+                  'Jurusan',
+                  profileRM.state.profile.studyProgram.toString(),
+                ),
+              ],
+            ),
           ),
           Center(
             child: InkWell(
@@ -89,12 +100,10 @@ class _ProfilePageState extends BaseStateful<ProfilePage> {
               ),
             ),
           ),
-          const HeightSpace(30),
+          const HeightSpace(24),
           Center(
             child: InkWell(
-              onTap: () {
-                nav.goToHomeDaftarUlasan();
-              },
+              onTap: () => nav.goToHomeDaftarUlasan(),
               child: Text(
                 'Riwayat Ulasan',
                 style: FontTheme.poppins14w500black().copyWith(
@@ -104,7 +113,7 @@ class _ProfilePageState extends BaseStateful<ProfilePage> {
               ),
             ),
           ),
-          const HeightSpace(30),
+          const HeightSpace(24),
           SecondaryButton(
             width: double.infinity,
             text: 'Keluar',
@@ -130,7 +139,8 @@ class _ProfilePageState extends BaseStateful<ProfilePage> {
   }
 
   Future<void> _logout() async {
-    Cleaner().cleanWhenLogout();
+    await Cleaner().cleanWhenLogout();
     unawaited(nav.replaceToSsoPage());
   }
+
 }

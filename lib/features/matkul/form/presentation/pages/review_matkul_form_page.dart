@@ -4,9 +4,9 @@ part of '_pages.dart';
 
 class ReviewMatkulFormPage extends StatefulWidget {
   const ReviewMatkulFormPage({
-    Key? key,
     required this.course,
-  }) : super(key: key);
+    super.key,
+  });
 
   final CourseModel course;
 
@@ -124,21 +124,54 @@ class _ReviewMatkulFormPageState extends BaseStateful<ReviewMatkulFormPage> {
 
                       final reviewFormState = reviewFormRM.state;
                       final reviewFormStateData = reviewFormState.formData;
-                      if (reviewFormState.formKey.currentState!.validate() &&
-                          reviewFormStateData.ratingUnderstandable != null &&
-                          reviewFormStateData.ratingFitToCredit != null &&
-                          reviewFormStateData.ratingFitToStudyBook != null &&
-                          reviewFormStateData.ratingBeneficial != null &&
-                          reviewFormStateData.ratingRecommended != null) {
-                        await reviewFormRM.state
-                            .submitForm(widget.course.code!);
-                        await Future.delayed(const Duration(milliseconds: 150));
-                        reviewFormRM.state.cleanForm();
-                        nav.pop();
-                        await nav.replaceToReviewPendingPage();
+
+                      // Check if all ratings are provided
+                      final ratings = [
+                        reviewFormStateData.ratingUnderstandable,
+                        reviewFormStateData.ratingFitToCredit,
+                        reviewFormStateData.ratingFitToStudyBook,
+                        reviewFormStateData.ratingBeneficial,
+                        reviewFormStateData.ratingRecommended,
+                      ];
+
+                      if (!reviewFormState.formKey.currentState!.validate() ||
+                          ratings.any((rating) => rating == null) ||
+                          ratings.any(
+                            (rating) => rating != null && rating < 1,
+                          )) {
+                        WarningMessenger('Harap isi semua field').show(context);
                         return;
                       }
-                      WarningMessenger('Harap isi semua field').show(context);
+
+                      // Submit the form
+                      try {
+                        await reviewFormRM.state
+                            .submitForm(course: widget.course);
+                      } catch (_) {
+                        // submitForm folds the repository failure by
+                        // rethrowing it. Left unhandled the throw escapes
+                        // onTap, and since it also skips the navigation below,
+                        // a rejected review looks exactly like a tap that
+                        // never registered: spinner off, form unchanged, no
+                        // message anywhere.
+                        if (!mounted) return;
+                        ErrorMessenger(
+                          'Ulasan gagal dikirim. Periksa koneksi kamu dan '
+                          'pastikan isi ulasan sesuai panduan, lalu coba lagi.',
+                        ).show(context);
+                        return;
+                      }
+                      await Future.delayed(const Duration(milliseconds: 150));
+
+                      reviewFormRM.state.cleanForm();
+                      nav.pop();
+
+                      // Trigger In-App Review asynchronously after navigation transition
+                      Future.delayed(const Duration(milliseconds: 1500), () {
+                        InAppReviewService.instance.requestReview();
+                      });
+
+                      await nav.replaceToReviewPendingPage();
                     },
                   ),
                 ),
@@ -166,10 +199,9 @@ class _ReviewMatkulFormPageState extends BaseStateful<ReviewMatkulFormPage> {
       context: context,
       builder: (BuildContext context) {
         //prevent Back button press
-        return WillPopScope(
-          onWillPop: () async {
-            return false;
-          },
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {},
           child: alert,
         );
       },

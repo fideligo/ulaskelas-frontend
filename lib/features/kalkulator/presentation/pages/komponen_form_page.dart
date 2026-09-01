@@ -2,17 +2,23 @@ part of '_pages.dart';
 
 class ComponentFormPage extends StatefulWidget {
   const ComponentFormPage({
-    Key? key,
+    required this.givenSemester,
+    required this.courseId,
     required this.calculatorId,
     required this.courseName,
     required this.totalScore,
     required this.totalPercentage,
-  }) : super(key: key);
+    required this.courseSKS,
+    super.key,
+  });
 
+  final String givenSemester;
+  final int courseId;
   final int calculatorId;
   final String courseName;
   final double totalScore;
   final double totalPercentage;
+  final int courseSKS;
 
   @override
   _ComponentFormPageState createState() => _ComponentFormPageState();
@@ -20,7 +26,26 @@ class ComponentFormPage extends StatefulWidget {
 
 class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
   @override
-  void init() {}
+  void init() {
+    componentFormRM.setState((s) => s.cleanForm());
+    componentFormRM.state.previousFrequency = '1';
+    componentFormRM.state.frequency.text = '1';
+    componentFormRM.state.justVisited = true;
+
+    // print(componentFormRM.state.scoreControllers);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    componentFormRM.state.getCachedRecommendation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Pref.getBool('doneAppTour') == false ||
+          Pref.getBool('doneAppTour') == null) {
+        showcaseAddComponentFields();
+      }
+    });
+  }
 
   @override
   ScaffoldAttribute buildAttribute() {
@@ -30,7 +55,7 @@ class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
   @override
   PreferredSizeWidget? buildAppBar(BuildContext context) {
     return BaseAppBar(
-      label: 'Tambah Komponen',
+      label: 'Tambah Komponen Nilai',
       onBackPress: onBackPressed,
     );
   }
@@ -40,40 +65,102 @@ class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
     BuildContext context,
     SizingInformation sizeInfo,
   ) {
-    return Column(
-      children: [
-        Expanded(
-          child: Form(
-            key: componentFormRM.state.formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                _buildNameField(),
-                const HeightSpace(20),
-                _buildScoreField(),
-                const HeightSpace(20),
-                _buildWeightField(),
-              ],
+    return ShowCaseWidget(
+      builder: (context) {
+        addComponentContext = context;
+        return Column(
+          children: [
+            Expanded(
+              child: Form(
+                key: componentFormRM.state.formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(24),
+                  children: [
+                    ShowcaseWrapper(
+                      showcaseKey: inAppTourKeys.componentFieldGC,
+                      tooltipPosition: TooltipPosition.bottom,
+                      targetPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      targetBorderRadius: BorderRadius.circular(10),
+                      container: componentFieldShowcase(context),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ShowcaseWrapper(
+                            showcaseKey: inAppTourKeys.componentNameGC,
+                            tooltipPosition: TooltipPosition.bottom,
+                            targetPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                            targetBorderRadius: BorderRadius.circular(10),
+                            container: componentNameShowcase(context),
+                            child: _buildNameField(),
+                          ),
+                          const HeightSpace(24),
+                          ShowcaseWrapper(
+                            showcaseKey: inAppTourKeys.componentWeightGC,
+                            tooltipPosition: TooltipPosition.bottom,
+                            targetPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                            targetBorderRadius: BorderRadius.circular(10),
+                            container: componentWeightShowcase(context),
+                            child: _buildWeightField(),
+                          ),
+                          const HeightSpace(20),
+                          _buildFrequencyController(),
+                        ],
+                      ),
+                    ),
+                    HeightSpace(
+                      componentFormRM.state.scoreControllers.length == 1
+                          ? 25
+                          : 10,
+                    ),
+                    ShowcaseWrapper(
+                      showcaseKey: inAppTourKeys.componentScoreGC,
+                      tooltipPosition: TooltipPosition.bottom,
+                      targetPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      targetBorderRadius: BorderRadius.circular(10),
+                      container: componentScoreShowcase(
+                        context,
+                        widget.calculatorId,
+                      ),
+                      child: _buildScoreField(),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-        OnReactive(
-          () => SimpanButton(
-            isLoading: componentFormRM.state.isLoading,
-            text: 'Simpan',
-            onTap: () async {
-              await onSubmitCallBack(context);
-            },
-          ),
-        )
-      ],
+            OnReactive(
+              () => SimpanButton(
+                isLoading: componentFormRM.state.isLoading,
+                text: 'Simpan',
+                onTap: () async {
+                  if (!(Pref.getBool('doneAppTour') == false ||
+                      Pref.getBool('doneAppTour') == null)) {
+                    await onSubmitCallBack(context);
+                  }
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   double _temporaryUpdateScore(
-      double newScore,
-      double newWeight,
-      ) {
+    double newScore,
+    double newWeight,
+  ) {
     return widget.totalScore + (newScore * newWeight / 100);
   }
 
@@ -83,6 +170,7 @@ class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
 
   Future<void> onSubmitCallBack(BuildContext context) async {
     final currentFocus = FocusScope.of(context);
+    componentFormRM.state.justVisited = false;
 
     if (!currentFocus.hasPrimaryFocus) {
       currentFocus.unfocus();
@@ -90,116 +178,279 @@ class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
     if (componentFormRM.state.isLoading) {
       return;
     }
+    MixpanelService.track('calculator_add_course_component');
+
     if (componentFormRM.state.formKey.currentState!.validate()) {
       // progressDialogue(context);
+      await componentRM.setState((s) => s.componentChange = true);
       await componentFormRM.state.submitForm(widget.calculatorId);
       await Future.delayed(const Duration(milliseconds: 150));
+
       nav.pop();
+
+      final averageScore = componentFormRM.state.averageScore() ?? 0;
+      final weight = componentFormRM.state.formData.weight!;
+
+      componentFormRM.state.cleanForm();
+      if (kDebugMode) {
+        print('success');
+      }
+
+      // Trigger In-App Review asynchronously after navigation transition
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        InAppReviewService.instance.requestReview();
+      });
+
       await nav.replaceToComponentPage(
+        givenSemester: widget.givenSemester,
+        courseId: widget.courseId,
         calculatorId: widget.calculatorId,
         courseName: widget.courseName,
+        courseSKS: widget.courseSKS,
         totalScore: _temporaryUpdateScore(
-          componentFormRM.state.formData.score!,
-          componentFormRM.state.formData.weight!,
+          averageScore < 0 ? 0 : averageScore,
+          weight,
         ),
         totalPercentage: _temporaryUpdateWeight(
-          componentFormRM.state.formData.weight!,),
+          weight,
+        ),
       );
-      componentFormRM.state.cleanForm();
+
       return;
     }
-    WarningMessenger('Harap isi semua field').show(context);
+
+    WarningMessenger('Pastikan semua field sudah terisi dengan benar!')
+        .show(context);
   }
 
-  TextFormField _buildNameField() {
-    return TextFormField(
-      controller: componentFormRM.state.nameController,
-      minLines: 1,
-      style: FontTheme.poppins12w400black(),
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.all(16),
-        // constraints: const BoxConstraints(maxHeight: 12.5 * 20),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildNameField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: 'Nama Komponen ',
+            style: FontTheme.poppins12w400black().copyWith(
+              fontSize: 13,
+            ),
+            children: [
+              TextSpan(
+                text: '*',
+                style: FontTheme.poppins12w600black().copyWith(
+                  fontSize: 13,
+                  color: BaseColors.danger,
+                ),
+              ),
+            ],
+          ),
         ),
-        hintText: 'Nama Komponen',
-      ),
-      textInputAction: TextInputAction.newline,
-      onChanged: (value) {
-        if (value.trim().isEmpty) {
-          componentFormRM.state.nameController.text = '';
-        }
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'This field is required.';
-        }
-        componentFormRM.setState((s) => s.setName());
-        return null;
-      },
+        const HeightSpace(8),
+        DropDownField(
+          controller: componentFormRM.state.nameController,
+          onValidate: () => componentFormRM.setState((s) => s.setName()),
+          value: '',
+          items: componentFormRM.state.recommendation,
+          setter: (dynamic newValue) {
+            componentFormRM.state.nameController.text = newValue;
+          },
+        ),
+      ],
     );
   }
 
-  TextFormField _buildScoreField() {
-    return TextFormField(
-      controller: componentFormRM.state.scoreController,
-      minLines: 1,
-      style: FontTheme.poppins12w400black(),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.allow(RegExp('[0-9]+[,.]{0,1}[0-9]*')),
-      ],
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.all(16),
-        // constraints: const BoxConstraints(maxHeight: 12.5 * 20),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildWeightField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: 'Bobot Nilai (%) ',
+            style: FontTheme.poppins12w400black().copyWith(
+              fontSize: 13,
+            ),
+            children: [
+              TextSpan(
+                text: '*',
+                style: FontTheme.poppins12w600black().copyWith(
+                  fontSize: 13,
+                  color: BaseColors.danger,
+                ),
+              ),
+            ],
+          ),
         ),
-        hintText: 'Nilai',
-      ),
-      onChanged: (value) {
-        if (value.trim().isEmpty) {
-          componentFormRM.state.scoreController.text = '';
-        }
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'This field is required.';
-        }
-        componentFormRM.setState((s) => s.setScore());
-        return null;
-      },
+        const HeightSpace(8),
+        TextFormField(
+          controller: componentFormRM.state.weightController,
+          minLines: 1,
+          style: FontTheme.poppins12w400black(),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.allow(RegExp('[0-9]+[,.]{0,1}[0-9]*')),
+          ],
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.all(16),
+            // constraints: const BoxConstraints(maxHeight: 12.5 * 20),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            hintText: 'Contoh: 7,5',
+            suffixIcon: const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: Icon(
+                Icons.percent,
+                size: 20,
+                color: BaseColors.neutral80,
+              ),
+            ),
+          ),
+          onChanged: (value) {
+            if (value.trim().isEmpty) {
+              componentFormRM.state.weightController.clear();
+            }
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'This field is required.';
+            }
+            final normalizedValue = value.replaceAll(',', '.');
+            if (double.tryParse(normalizedValue) == null) {
+              return 'Please enter a valid number.';
+            }
+            componentFormRM.setState((s) => s.setWeight());
+            return null;
+          },
+        ),
+      ],
     );
   }
 
-  TextFormField _buildWeightField() {
-    return TextFormField(
-      controller: componentFormRM.state.weightController,
-      minLines: 1,
-      style: FontTheme.poppins12w400black(),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.allow(RegExp('[0-9]+[,.]{0,1}[0-9]*')),
-      ],
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.all(16),
-        // constraints: const BoxConstraints(maxHeight: 12.5 * 20),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        hintText: 'Bobot (%)',
+  Widget _buildFrequencyController() {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: 5,
+        top: 5,
+        bottom: 5,
       ),
-      onChanged: (value) {
-        if (value.trim().isEmpty) {
-          componentFormRM.state.weightController.text = '';
-        }
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'This field is required.';
-        }
-        componentFormRM.setState((s) => s.setWeight());
-        return null;
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text.rich(
+            TextSpan(
+              text: 'Frekuensi ',
+              style: FontTheme.poppins12w400black().copyWith(
+                fontSize: 13,
+              ),
+              children: [
+                TextSpan(
+                  text: '*',
+                  style: FontTheme.poppins12w600black().copyWith(
+                    fontSize: 13,
+                    color: BaseColors.danger,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          FrequencyController(
+            onIncrease: () => componentFormRM.state.increaseFrequency(),
+            onDecrease: () => componentFormRM.state.decreaseFrequency(),
+            onChangingValue: (value, isExceed) =>
+                componentFormRM.state.setFrequency(value, isExceed),
+            frequencyController: componentFormRM.state.frequency,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoreField() {
+    return OnBuilder<ComponentFormState>.all(
+      listenTo: componentFormRM,
+      onIdle: () => const CircleLoading(),
+      onWaiting: () => const CircleLoading(),
+      onError: (error, refresh) => Text(error.toString()),
+      onData: (data) {
+        return Column(
+          children: [
+            if (data.scoreControllers.length == 1)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: data.scoreControllers.first,
+                      minLines: 1,
+                      style: FontTheme.poppins12w400black(),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.allow(
+                          RegExp('[0-9]+[,.]{0,1}[0-9]*'),
+                        ),
+                      ],
+                      onFieldSubmitted: (value) => {
+                        data.justVisited = false,
+                        data.setScore(1),
+                      },
+                      onChanged: (value) {
+                        if (value.trim().isEmpty) {
+                          data.scoreControllers.first.clear();
+                        }
+                      },
+                      validator: (value) {
+                        final normalizedValue = value?.replaceAll(',', '.');
+                        if ((double.tryParse(normalizedValue ?? '0') ?? 0) >
+                            200) {
+                          return "Score can't be more than 200";
+                        }
+                        componentFormRM.setState((s) => s.setScore(1));
+                        return null;
+                      },
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.all(16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        hintText: 'Nilai',
+                      ),
+                    ),
+                  ),
+                  if (componentRM.state.hasReachedMax &&
+                      componentRM.state.canGiveRecom)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const WidthSpace(12),
+                        RecommendedScoreBox(
+                          value: componentFormRM.state.recommendedScore,
+                          score:
+                              componentFormRM.state.scoreControllers.first.text,
+                        ),
+                      ],
+                    ),
+                ],
+              )
+            else
+              ScoresFieldInput(
+                recommendedScore: componentFormRM.state.recommendedScore,
+                showRecommendedScore: componentRM.state.hasReachedMax &&
+                    componentRM.state.canGiveRecom,
+                averageScoreCalculation: () => data.averageScore() ?? 0,
+                onControllerEmpty: () =>
+                    data.scoreControllers.add(TextEditingController()),
+                onFieldChanged: (value, index) => {
+                  data.justVisited = false,
+                  data.setScore(index),
+                },
+                controllers: data.scoreControllers,
+                length: int.tryParse(data.frequency.text) ?? 1,
+              ),
+          ],
+        );
       },
     );
   }
@@ -214,6 +465,7 @@ class _ComponentFormPageState extends BaseStateful<ComponentFormPage> {
 
   @override
   Future<bool> onBackPressed() async {
+    componentFormRM.state.previousFrequency = '1';
     componentFormRM.state.cleanForm();
     nav.pop<void>();
     return true;

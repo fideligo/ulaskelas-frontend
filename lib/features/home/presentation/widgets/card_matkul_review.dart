@@ -2,10 +2,9 @@ part of '_widgets.dart';
 
 class CardMatkulReview extends StatelessWidget {
   const CardMatkulReview({
-    Key? key,
-    required this.review,
+    required this.review, super.key,
     this.onTap,
-  }) : super(key: key);
+  });
 
   final ReviewModel review;
   final VoidCallback? onTap;
@@ -30,22 +29,8 @@ class CardMatkulReview extends StatelessWidget {
           children: [
             Row(
               children: <Widget>[
-                Container(
-                  height: 50,
-                  width: 50,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      review.shortName.toString(),
-                      style: FontTheme.poppins14w700black().copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
+                FacultyLogo(
+                  code: review.courseCode,
                 ),
                 const WidthSpace(12),
                 Expanded(
@@ -63,8 +48,8 @@ class CardMatkulReview extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            review.courseCodeDesc.toString(),
-                            style: FontTheme.poppins12w400black(),
+                            '4 SKS   Wajib   ${review.courseCode ?? '-'}',
+                            style: FontTheme.poppins12w500black(),
                           ),
                           Text(
                             '${review.courseReviewCount} Ulasan',
@@ -110,11 +95,11 @@ class CardMatkulReview extends StatelessWidget {
                           : (review.hateSpeechStatus == 'WAITING')
                               ? TagStatus.pending
                               : TagStatus.rejected,
-                    )
+                    ),
                   ],
-                )
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),

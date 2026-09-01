@@ -2,106 +2,119 @@ part of '_widgets.dart';
 
 class CardCalculator extends StatelessWidget {
   const CardCalculator({
-    Key? key,
     required this.model,
+    required this.givenSemester,
+    super.key,
     this.onTap,
-  }) : super(key: key);
+  });
 
   final CalculatorModel model;
+  final String givenSemester;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: BaseColors.white,
-              boxShadow: BoxShadowDecorator().defaultShadow(context),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  height: 50,
-                  width: 50,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(.15),
-                    borderRadius: BorderRadius.circular(8),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: BaseColors.white,
+          boxShadow: BoxShadowDecorator().defaultShadow(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            FacultyLogo(code: model.courseCode),
+            const WidthSpace(14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    model.courseName ?? '-',
+                    style: FontTheme.poppins14w600black(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: Center(
-                    child: Text(
-                      model.shortName.toString(),
-                      style: FontTheme.poppins14w700black().copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
+                  const HeightSpace(3),
+                  Text(
+                    _details,
+                    style: FontTheme.poppins12w600black(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const HeightSpace(3),
+                  Text(
+                    (model.totalPercentage ?? 0) > 0
+                        ? _getFinalScoreAndGrade(model.totalScore ?? 0)
+                        : 'Belum ada nilai',
+                    style: FontTheme.poppins12w400black().copyWith(
+                      color: BaseColors.gray2,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const WidthSpace(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        model.courseName.toString(),
-                        style: FontTheme.poppins14w700black().copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const HeightSpace(4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _getFinalScoreAndGrade(model.totalScore!),
-                            style: FontTheme.poppins12w400black(),
-                          ),
-                          Text(
-                            '${model.totalPercentage?.toStringAsFixed(2)}%',
-                            style: FontTheme.poppins12w400black().copyWith(
-                              color: BaseColors.gray2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            const WidthSpace(8),
+            IconButton(
+              onPressed: () async => _deleteCard(context),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: BaseColors.error,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  String get _details => courseSubtitle(
+        sks: model.courseSKS,
+        codeDesc: model.courseCodeDesc,
+        code: model.courseCode,
+      );
+
+  Future<void> _deleteCard(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (context) => DeleteDialog(
+        title: 'Hapus Matkul',
+        content: 'Apakah kamu yakin ingin menghapus '
+            'Kalkulator ${model.courseName}?',
+        onConfirm: () async {
+          nav.pop();
+          await calculatorRM.setState(
+            (s) => s.deleteCalculator(
+              query: QueryCalculator(courseId: model.courseId),
+              givenSemester: givenSemester,
+              courseName: model.courseName!,
+              totalScore: model.totalScore!,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _getFinalGradeOnly(double score) {
+    if (score >= 85) return 'A';
+    if (score >= 80) return 'A-';
+    if (score >= 75) return 'B+';
+    if (score >= 70) return 'B';
+    if (score >= 65) return 'B-';
+    if (score >= 60) return 'C+';
+    if (score >= 55) return 'C';
+    if (score >= 40) return 'D';
+    return 'E';
+  }
+
   String _getFinalScoreAndGrade(double score) {
-    var grade = 'E';
-    if (score >= 85) {
-      grade = 'A';
-    } else if (score >= 80) {
-      grade = 'A-';
-    } else if (score >= 75) {
-      grade = 'B+';
-    } else if (score >= 70) {
-      grade = 'B';
-    } else if (score >= 65) {
-      grade = 'B-';
-    } else if (score >= 60) {
-      grade = 'C+';
-    } else if (score >= 55) {
-      grade = 'C';
-    } else if (score >= 40) {
-      grade = 'D';
-    }
+    final grade = _getFinalGradeOnly(score);
     return '$grade (${score.toStringAsFixed(2)})';
   }
 }

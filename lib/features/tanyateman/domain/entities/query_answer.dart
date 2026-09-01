@@ -1,0 +1,34 @@
+class QueryAnswer{
+  QueryAnswer({
+    this.page,
+    this.questionId,
+    // this.limit = Constants.limitPagination,
+    // this.byUser = false,
+  });
+
+  int? page;
+  int? questionId;
+  // bool? byUser;
+  // int? limit;
+
+  @override
+  String toString() {
+    final data = <String, String>{};
+    data['page'] = page.toString();
+    data['question_id'] = questionId.toString();
+    // data['limit'] = limit.toString();
+    // data['by_user'] = byUser.toString();
+    return Uri(queryParameters: data).query;
+  }
+
+  String generateQueryString() {
+    final data = <String, String>{};
+
+    if (page != null) data['page'] = page.toString();
+    if (questionId != null) data ['question_id'] = questionId.toString();
+    // if (limit != null) data['limit'] = limit.toString();
+    // if (byUser != null) data['by_user'] = byUser.toString();
+
+    return Uri(queryParameters: data).query;
+  }
+}

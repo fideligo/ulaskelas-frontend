@@ -17,26 +17,24 @@ abstract class Failure implements Exception {
 }
 
 class DioFailure implements Exception {
-  DioFailure.fromDioError(DioError dioError) {
-    switch (dioError.type) {
-      case DioErrorType.cancel:
+  DioFailure.fromDioError(DioException dioException) {
+    switch (dioException.type) {
+      case DioExceptionType.cancel:
         message = 'Request to API server was cancelled';
-        break;
-      case DioErrorType.connectTimeout:
+      case DioExceptionType.connectionTimeout:
         message = 'Connection timeout with API server';
-        break;
-      case DioErrorType.other:
+      case DioExceptionType.connectionError:
         message = 'Connection to API server failed due to internet connection';
-        break;
-      case DioErrorType.receiveTimeout:
+      case DioExceptionType.receiveTimeout:
         message = 'Receive timeout in connection with API server';
-        break;
-      case DioErrorType.sendTimeout:
+      case DioExceptionType.sendTimeout:
         message = 'Send timeout in connection with API server';
-        break;
-      case DioErrorType.response:
-        message = _handleResponseError(dioError.response);
-        break;
+      case DioExceptionType.badCertificate:
+        message = 'Invalid certificate from client';
+      case DioExceptionType.badResponse:
+        message = 'Bad response output from API server';
+      case DioExceptionType.unknown:
+        message = _handleResponseError(dioException.response);
     }
   }
 
@@ -67,69 +65,59 @@ class DioFailure implements Exception {
 
 class NetworkFailure extends Failure {
   NetworkFailure({
-    String? code,
-    String? message,
+    super.code,
+    super.message,
   }) : super(
-          code: code,
-          message: message,
           title: 'Network Failure',
         );
 }
 
 class NotFoundFailure extends Failure {
   NotFoundFailure({
-    String? code,
-    String? message,
+    super.code,
+    super.message,
   }) : super(
-          code: code,
-          message: message,
           title: 'Not Found Failure',
         );
 }
 
 class BadRequestFailure extends Failure {
   BadRequestFailure({
-    String? code,
-    String? message,
+    super.code,
+    super.message,
   }) : super(
-          code: code,
-          message: message,
           title: 'Bad Request Failure',
         );
 }
 
 class GeneralFailure extends Failure {
   GeneralFailure({
-    String? message,
+    super.message,
   }) : super(
-          message: message,
           title: 'General Failure',
         );
 }
 
 class TimeoutFailure extends Failure {
   TimeoutFailure({
-    String? message,
+    super.message,
   }) : super(
-          message: message,
           title: 'Timeout Failure',
         );
 }
 
 class ArgumentFailure extends Failure {
   ArgumentFailure({
-    String? message,
+    super.message,
   }) : super(
-          message: message,
           title: 'Argument Failure',
         );
 }
 
 class UnAuthorizeFailure extends Failure {
   UnAuthorizeFailure({
-    String? message,
+    super.message,
   }) : super(
-          message: message,
           title: 'UnAuthorize Failure',
         );
 }

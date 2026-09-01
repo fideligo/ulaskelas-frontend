@@ -8,10 +8,10 @@ part of '_pages.dart';
 /// ```;
 class DetailMatkulPage extends StatefulWidget {
   const DetailMatkulPage({
-    Key? key,
     required this.courseId,
     required this.courseCode,
-  }) : super(key: key);
+    super.key,
+  });
 
   final int courseId;
   final String courseCode;
@@ -24,11 +24,20 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
   late ScrollController scrollController;
   Completer<void>? completer;
 
+  bool scrollable = !(Pref.getBool('doneAppTour') == false ||
+      Pref.getBool('doneAppTour') == null);
+
+  void isScrollable(bool value) {
+    setState(() {
+      scrollable = value;
+    });
+  }
+
   @override
   void init() {
     scrollController = ScrollController();
     completer = Completer<void>();
-    scrollController.addListener(_onScroll);
+    // scrollController.addListener(_onScroll);
     StateInitializer(
       rIndicator: refreshIndicatorKey!,
       cacheKey: 'detail-course',
@@ -36,35 +45,44 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
     ).initialize();
   }
 
-  void _onScroll() {
-    if (_isBottom && !completer!.isCompleted && scrollCondition()) {
-      onScroll();
-    }
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Pref.getBool('doneAppTour') == false ||
+          Pref.getBool('doneAppTour') == null) {
+        showcaseCourseDetail();
+      }
+    });
   }
+
+  // void _onScroll() {
+  //   if (_isBottom && !completer!.isCompleted && scrollCondition()) {
+  //     onScroll();
+  //   }
+  // }
 
   bool scrollCondition() {
     return !reviewCourseRM.state.hasReachedMax;
   }
 
-  void onScroll() {
-    completer?.complete();
-    final query = QueryReview(courseCode: widget.courseCode);
-    reviewCourseRM.state.retrieveMoreData(query).then((value) {
-      completer = Completer<void>();
-      reviewCourseRM.notify();
-    }).onError((error, stackTrace) {
-      completer = Completer<void>();
-    });
-  }
+  // void onScroll() {
+  //   completer?.complete();
+  //   final query = QueryReview(courseCode: widget.courseCode);
+  //   reviewCourseRM.state.retrieveMoreData(query).then((value) {
+  //     completer = Completer<void>();
+  //     reviewCourseRM.notify();
+  //   }).onError((error, stackTrace) {
+  //     completer = Completer<void>();
+  //   });
+  // }
 
   bool get _isBottom {
     if (!scrollController.hasClients) {
-      print('no client');
       return false;
     }
     final maxScroll = scrollController.position.maxScrollExtent;
     final currentScroll = scrollController.offset;
-    print(currentScroll >= (maxScroll * 0.9));
     return currentScroll >= (maxScroll * 0.9);
   }
 
@@ -95,67 +113,102 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
     BuildContext context,
     SizingInformation sizeInfo,
   ) {
-    return Column(
-      children: [
-        Expanded(
-          child: RefreshIndicator(
-            key: refreshIndicatorKey,
-            onRefresh: retrieveData,
-            child: OnBuilder<CourseDetailState>.all(
-              listenTo: courseDetailRM,
-              onIdle: () => WaitingView(),
-              onWaiting: () => WaitingView(),
-              onError: (dynamic error, refresh) => const Text('error'),
-              onData: (data) {
-                final course = data.detailCourse;
-                return ListView(
-                  shrinkWrap: true,
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    TitleAndBookMark(course: course),
-                    const HeightSpace(24),
-                    if (course.tags?.isNotEmpty ?? false)
-                    _buildMatkulTag(course),
-                    const HeightSpace(16),
-                    _buildMatkulDescription(course),
-                    const HeightSpace(32),
-                    _buildMatkulPrerequisite(course),
-                    const HeightSpace(32),
-                    _buildReviewBySelf(),
-                    _buildReviews(course),
-                    const HeightSpace(16),
-                    if (course.reviewCount! > 3)
-                      InkWell(
-                        onTap: () => nav.goToAllReviewMatkulPage(
-                          courseId: widget.courseId,
-                          courseCode: widget.courseCode,
+    return ShowCaseWidget(
+      builder: (context) {
+        detailMatkulContext = context;
+        return Column(
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                key: refreshIndicatorKey,
+                onRefresh: retrieveData,
+                child: OnBuilder<CourseDetailState>.all(
+                  listenTo: courseDetailRM,
+                  onIdle: WaitingView.new,
+                  onWaiting: WaitingView.new,
+                  onError: (dynamic error, refresh) => const Text('error'),
+                  onData: (data) {
+                    final course = data.detailCourse;
+                    return ListView(
+                      shrinkWrap: true,
+                      controller: scrollController,
+                      physics: scrollable
+                          ? null
+                          : const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        ShowcaseWrapper(
+                          showcaseKey: inAppTourKeys.courseDetailDM,
+                          targetPadding: const EdgeInsets.all(14),
+                          targetBorderRadius: BorderRadius.circular(10),
+                          container: detailCourseDMShowCase(
+                            context,
+                            scrollController,
+                            isScrollable,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TitleAndBookMark(course: course),
+                              const HeightSpace(24),
+                              if (course.tags?.isNotEmpty ?? false)
+                                _buildMatkulTag(course),
+                              const HeightSpace(16),
+                              _buildMatkulDescription(course),
+                              const HeightSpace(32),
+                              _buildMatkulPrerequisite(course),
+                            ],
+                          ),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Lihat Semua Ulasan',
-                              style: FontTheme.poppins13w400purple(),
-                            ),
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: BaseColors.purpleHearth,
-                              size: 18,
-                            ),
-                          ],
+                        const HeightSpace(32),
+                        ShowcaseWrapper(
+                          showcaseKey: inAppTourKeys.reviewBySelfDM,
+                          targetPadding: const EdgeInsets.all(14),
+                          targetBorderRadius: BorderRadius.circular(10),
+                          container: reviewByYouDMShowcase(
+                            context,
+                            scrollController,
+                            isScrollable,
+                          ),
+                          child: _buildReviewBySelf(),
                         ),
-                      ),
-                  ],
-                );
-              },
+                        const HeightSpace(32),
+                        _buildReviews(course),
+                        const HeightSpace(16),
+                        if (course.reviewCount! > 3)
+                          InkWell(
+                            onTap: () => nav.goToAllReviewMatkulPage(
+                              courseId: widget.courseId,
+                              courseCode: widget.courseCode,
+                              course: course,
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Lihat Semua Ulasan',
+                                  style: FontTheme.poppins13w400purple(),
+                                ),
+                                const SizedBox(
+                                  width: 10,
+                                ),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: BaseColors.purpleHearth,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -168,11 +221,11 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
   }
 
   Widget _buildMatkulTag(CourseModel course) {
-    return Row(
+    return Wrap(
       children: course.tags!
           .map(
             (e) => Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 8, bottom: 8),
               child: Tag(
                 label: e,
               ),
@@ -186,19 +239,43 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Ulasan',
-          style: FontTheme.poppins14w700black(),
+        ShowcaseWrapper(
+          showcaseKey: inAppTourKeys.reviewsDM,
+          targetPadding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+          targetBorderRadius: BorderRadius.circular(10),
+          container: reviewsDMShowcase(
+            detailMatkulContext!,
+            scrollController,
+            isScrollable,
+            () => nav.goToDetailMatkulPage(
+              course.id!,
+              course.code!,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ulasan',
+                style: FontTheme.poppins14w700black(),
+              ),
+              const HeightSpace(8),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFE0E0E0),
+              ),
+              const HeightSpace(12),
+              _buildAllRatings(course),
+              const HeightSpace(12),
+              if (Pref.getBool('doneAppTour') == false ||
+                  Pref.getBool('doneAppTour') == null)
+                ReviewCard(
+                  review: ReviewModel.fromJson(dummyReview),
+                ),
+            ],
+          ),
         ),
-        const HeightSpace(8),
-        const Divider(
-          height: 1,
-          thickness: 1,
-          color: Color(0xFFE0E0E0),
-        ),
-        const HeightSpace(12),
-        _buildAllRatings(course),
-        const HeightSpace(12),
         OnBuilder<ReviewCourseState>.all(
           listenTo: reviewCourseRM,
           onIdle: () => const CircleLoading(),
@@ -227,9 +304,7 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
                 final review = data.reviews[data.reviews.length - i - 1];
                 return ReviewCard(
                   review: review,
-                  onLiked: () {
-                    reviewCourseRM.state.like(review);
-                  },
+                  onLiked: () => reviewCourseRM.state.like(review),
                 );
               },
             );
@@ -246,7 +321,7 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
           children: [
             Center(
               child: Text(
-                '${course.ratingAverage ?? 0.0}',
+                (course.ratingAverage ?? 0.0).toStringAsFixed(1),
                 style: FontTheme.poppins36w700black(),
               ),
             ),
@@ -260,7 +335,7 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
                 '${course.reviewCount} Ulasan',
                 style: FontTheme.poppins12w400black(),
               ),
-            )
+            ),
           ],
         ),
         const WidthSpace(32),
@@ -331,7 +406,9 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
           onWaiting: () => const CircleLoading(),
           onError: (dynamic error, refresh) => Text(error.toString()),
           onData: (data) {
-            if (data.myReviews.isEmpty) {
+            if (data.myReviews.isEmpty ||
+                Pref.getBool('doneAppTour') == false ||
+                Pref.getBool('doneAppTour') == null) {
               return Column(
                 children: [
                   Align(
@@ -349,7 +426,7 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
                         );
                       }
                     },
-                  )
+                  ),
                 ],
               );
             }
@@ -370,7 +447,6 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
             );
           },
         ),
-        const HeightSpace(32),
       ],
     );
   }
@@ -428,6 +504,8 @@ class _DetailMatkulPageState extends BaseStateful<DetailMatkulPage> {
 
   @override
   Future<bool> onBackPressed() async {
-    return true;
+    // Prevent user on pressing back button when showcase is running
+    return !(Pref.getBool('doneAppTour') == false ||
+        Pref.getBool('doneAppTour') == null);
   }
 }

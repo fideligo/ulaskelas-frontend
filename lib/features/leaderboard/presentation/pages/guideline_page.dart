@@ -1,7 +1,7 @@
 part of '_pages.dart';
 
 class GuidelinePage extends StatelessWidget {
-  const GuidelinePage({Key? key}) : super(key: key);
+  const GuidelinePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +58,7 @@ Menyebarluaskan informasi dari mata kuliah yang (mungkin) bersifat konfidensial'
               Text(
                 'Ulasan yang dikategorikan semua (atau) salah satu dari '
                 'kriteria berikut akan langsung dihapus oleh admin '
-                'UlasKelas.',
+                'TemanKuliah.',
                 style: FontTheme.poppins12w600black().apply(
                   color: BaseColors.danger,
                 ),

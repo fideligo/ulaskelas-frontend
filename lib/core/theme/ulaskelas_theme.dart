@@ -14,8 +14,8 @@ class UlaskelasThemeImpl implements UlaskelasTheme {
       secondaryHeaderColor: BaseColors.goldenrod,
       shadowColor: BaseColors.gray5,
       textTheme: TextTheme(
-        caption: FontTheme.poppins12w400black(),
-        button: FontTheme.poppins14w700black().copyWith(
+        bodySmall: FontTheme.poppins12w400black(),
+        labelLarge: FontTheme.poppins14w700black().copyWith(
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -32,8 +32,31 @@ class UlaskelasThemeImpl implements UlaskelasTheme {
           borderSide: const BorderSide(color: BaseColors.purpleHearth),
           borderRadius: BorderRadius.circular(4),
         ),
+        prefixIconColor: BaseColors.gray3,
       ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
+          if (states.contains(MaterialState.selected)) {
+            return BaseColors.purpleHearth;
+          }
+          return BaseColors.transparent;
+        }),
+        checkColor: MaterialStateProperty.all(BaseColors.white),
+        side: const BorderSide(color: BaseColors.gray3),
+      ),
+      dialogBackgroundColor: BaseColors.white,
       dividerColor: BaseColors.gray5,
+      appBarTheme: const AppBarTheme(
+        surfaceTintColor: BaseColors.alabaster,
+        backgroundColor: BaseColors.alabaster,
+        iconTheme: IconThemeData(color: BaseColors.mineShaft),
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          surfaceTintColor: MaterialStateProperty.all(BaseColors.white),
+          backgroundColor: MaterialStateProperty.all(BaseColors.white),
+        ),
+      ),
       colorScheme: const ColorScheme(
         primary: BaseColors.purpleHearth,
         primaryContainer: BaseColors.malibu,
