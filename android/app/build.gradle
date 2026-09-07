@@ -94,6 +94,17 @@ android {
         }
     }
 
+    // Official workaround for the Play Console 16 KB check on AGP 8.3-8.5:
+    // bundletool does not 16 KB-align uncompressed .so when generating APKs
+    // from the bundle, so ship them compressed and let the installer extract
+    // them instead. Requires `android:extractNativeLibs` to be absent from
+    // the manifest, otherwise the hardcoded value wins over this DSL.
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+
     buildTypes {
         release {
             shrinkResources false
