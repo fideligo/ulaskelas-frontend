@@ -1,9 +1,9 @@
 /// Models for the SLCM autofill session API.
 ///
-/// The backend runs one shared Chromium behind a noVNC popup: the app opens a
-/// session, sends the student to `popupUrl` to log into SLCM by hand, polls the
-/// session until the scraper reports `ready`, then confirms the import. Shapes
-/// here mirror `views_slcm_autofill.py::_serialize` exactly.
+/// The backend talks to SLCM over HTTP on the student's behalf: the app opens a
+/// session with the SSO credentials, polls it until the importer reports
+/// `ready`, then confirms the import. Shapes here mirror
+/// `views_slcm_autofill.py::_serialize` exactly.
 library;
 
 int? _asInt(dynamic value) {
@@ -34,7 +34,9 @@ List<T> _asModelList<T>(
 /// [unknown] absorbs any state this build has not been taught about, so a
 /// backend that gains a status stalls the poller instead of throwing mid-parse.
 enum SlcmSessionStatus {
-  waitingLogin('waiting_login'),
+  /// The backend is signing in to SLCM with the credentials it was handed.
+  /// Replaces the old `waiting_login`, which required a human at a popup.
+  authenticating('authenticating'),
   scraping('scraping'),
   ready('ready'),
   imported('imported'),
@@ -59,7 +61,7 @@ enum SlcmSessionStatus {
 
   /// The scraper is still working — keep polling.
   bool get isPending =>
-      this == SlcmSessionStatus.waitingLogin ||
+      this == SlcmSessionStatus.authenticating ||
       this == SlcmSessionStatus.scraping;
 
   /// Nothing will change on its own from here — stop polling.
@@ -143,6 +145,7 @@ class SlcmPreviewModel {
     this.matched = const [],
     this.duplicates = const [],
     this.unmatched = const [],
+    this.warningStaleData = false,
   });
 
   SlcmPreviewModel.fromJson(Map<String, dynamic> json) {
@@ -151,6 +154,9 @@ class SlcmPreviewModel {
         _asModelList(json['duplicates'], SlcmPreviewCourseModel.fromJson);
     unmatched =
         _asModelList(json['unmatched'], SlcmUnmatchedCourseModel.fromJson);
+    // Anything but a literal true is treated as "not stale": a missing or
+    // malformed flag must never hold the import back.
+    warningStaleData = json['warning_stale_data'] == true;
   }
 
   /// Courses that will be imported on confirm.
@@ -159,14 +165,23 @@ class SlcmPreviewModel {
   /// Already in this semester's calculator; the import skips them.
   List<SlcmPreviewCourseModel> duplicates = const [];
 
-  /// Scraped but absent from the catalog; nothing can be imported for them.
+  /// Read off SLCM but absent from the catalog; nothing can be imported for
+  /// them.
   List<SlcmUnmatchedCourseModel> unmatched = const [];
+
+  /// The backend could not confirm SLCM served the current term, so these rows
+  /// may lag behind the student's real IRS.
+  ///
+  /// Advisory only. The import is never blocked on it — the UI shows a banner
+  /// and lets the student decide.
+  bool warningStaleData = false;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'matched': matched.map((e) => e.toJson()).toList(),
       'duplicates': duplicates.map((e) => e.toJson()).toList(),
       'unmatched': unmatched.map((e) => e.toJson()).toList(),
+      'warning_stale_data': warningStaleData,
     };
   }
 }
@@ -213,9 +228,8 @@ class SlcmImportResultModel {
 
 /// An SLCM autofill session.
 ///
-/// The same object comes back from create, poll, and confirm; the extra fields
-/// are call-specific. [popupUrl] is only serialised on create, and [result]
-/// only on confirm.
+/// The same object comes back from create, poll, and confirm; [result] is the
+/// one call-specific field, present only on confirm.
 class SlcmSessionModel {
   SlcmSessionModel({
     this.sessionId,
@@ -225,7 +239,6 @@ class SlcmSessionModel {
     this.sourcePeriod,
     this.preview,
     this.error,
-    this.popupUrl,
     this.result,
   });
 
@@ -244,7 +257,6 @@ class SlcmSessionModel {
     if (rawError is Map<String, dynamic>) {
       error = SlcmSessionErrorModel.fromJson(rawError);
     }
-    popupUrl = json['popup_url'] as String?;
     final rawResult = json['result'];
     if (rawResult is Map<String, dynamic>) {
       result = SlcmImportResultModel.fromJson(rawResult);
@@ -278,10 +290,6 @@ class SlcmSessionModel {
   SlcmPreviewModel? preview;
   SlcmSessionErrorModel? error;
 
-  /// Where to send the student to log into SLCM. Create response only, and it
-  /// is single-use — opening it twice returns `INVALID_POPUP_TOKEN`.
-  String? popupUrl;
-
   /// Import counts. Confirm response only.
   SlcmImportResultModel? result;
 
@@ -294,7 +302,6 @@ class SlcmSessionModel {
       'source_period': sourcePeriod,
       'preview': preview?.toJson(),
       'error': error?.toJson(),
-      'popup_url': popupUrl,
       'result': result?.toJson(),
     };
   }

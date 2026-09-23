@@ -2,12 +2,13 @@ part of '_datasources.dart';
 
 /// The SLCM autofill session API.
 ///
-/// One shared remote browser sits behind these calls, so the backend allows a
-/// single live session per user and a single one globally: create returns 409
-/// `SESSION_ALREADY_ACTIVE` or `BROWSER_BUSY` rather than queueing. Cancel a
-/// session the student abandons instead of leaving it to time out.
+/// The backend signs in to SLCM over HTTP and reads the IRS page itself, so the
+/// whole run is server-side once [createSession] answers. It still allows a
+/// single live session per user: create returns 409 `SESSION_ALREADY_ACTIVE`
+/// rather than queueing. Cancel a session the student abandons instead of
+/// leaving it to time out.
 abstract class SlcmAutofillRemoteDataSource {
-  Future<Parsed<SlcmSessionModel>> createSession();
+  Future<Parsed<SlcmSessionModel>> createSession(SlcmCredentials credentials);
 
   Future<Parsed<SlcmSessionModel>> getSession(String sessionId);
 
@@ -21,30 +22,30 @@ class SlcmAutofillRemoteDataSourceImpl implements SlcmAutofillRemoteDataSource {
   /// still well under the server's own session timeout.
   static const _confirmTimeout = Duration(seconds: 20);
 
-  /// Opens a session and returns it with `popupUrl` set, at status
-  /// `waiting_login`. The scraper starts server-side straight away; nothing is
-  /// scraped until the student finishes logging in through the popup.
+  /// Opens a session with the student's SSO credentials, at status
+  /// `authenticating`. Everything after this runs server-side.
   ///
-  /// Sends no `given_semester`: the backend now derives the student's current
-  /// semester from their NPM entry year and the running UI academic period,
-  /// and reports its choice back as `given_semester` on every response. The
-  /// app reads that rather than guessing a target of its own.
+  /// This is the only call that carries the password, and
+  /// [SlcmCredentials.toRequestBody] is the only thing that can produce it —
+  /// see that class for why it deliberately has no `toJson`.
   ///
-  /// The body is an empty object rather than nothing at all — `postIt` encodes
-  /// a null model as the literal `null`, which leaves the view with no map to
-  /// read the optional field off.
+  /// `given_semester` is omitted when the student left the field blank, which
+  /// tells the backend to derive the semester from their NPM entry year and
+  /// the running academic period. It echoes its choice back on every response.
   @override
-  Future<Parsed<SlcmSessionModel>> createSession() async {
+  Future<Parsed<SlcmSessionModel>> createSession(
+    SlcmCredentials credentials,
+  ) async {
     final url = EndpointsRevamp.slcmAutofillSessions;
     final resp = await postIt(
       url,
-      model: const <String, dynamic>{},
+      model: credentials.toRequestBody(),
     );
     return resp.parse(SlcmSessionModel.fromJson(resp.dataBodyAsMap));
   }
 
   /// Reads the session. This is the poll target: `preview` stays null until
-  /// the status reaches `ready`, and `popupUrl` is never included here.
+  /// the status reaches `ready`.
   @override
   Future<Parsed<SlcmSessionModel>> getSession(String sessionId) async {
     final url = EndpointsRevamp.slcmAutofillSession(sessionId);

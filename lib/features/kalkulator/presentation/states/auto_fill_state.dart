@@ -2,22 +2,27 @@ part of '_states.dart';
 
 /// Courses SLCM reports for one semester, driven by the autofill session API.
 ///
-/// The backend owns a single remote browser, so the flow is: open a session,
-/// send the student to `popupUrl` to log into SLCM by hand, then poll until the
-/// scraper settles. [retrieveData] does not return until the session reaches a
-/// settled state, which keeps `OnBuilder` on the waiting view for the whole
-/// login and routes a failure to the error view.
+/// The backend signs in to SLCM over HTTP itself, so the flow is: open a
+/// session with the student's SSO credentials, then poll until the importer
+/// settles. [retrieveData] does not return until the session reaches a settled
+/// state, which keeps `OnBuilder` on the waiting view for the whole run and
+/// routes a failure to the error view.
 ///
-/// [retrieveData] takes no semester. The backend works out which one the
+/// [retrieveData] takes the credentials and nothing else. `givenSemester` is
+/// optional inside them: left blank, the backend works out which semester the
 /// student is in from their NPM and hands it back on the session, so
-/// [givenSemester] is filled from the response rather than chosen here — see
+/// [givenSemester] is filled from the response — see
 /// `slcm_autofill_remote_data_source.dart`.
+///
+/// The password reaches this class only inside [SlcmCredentials] and is never
+/// assigned to a field: it lives in the `retrieveData` frame and goes out of
+/// scope when the create call returns.
 ///
 /// Everything `preview.matched` holds starts kept, and [remove] drops a row
 /// the student does not want. That choice is local for now: the confirm
 /// endpoint takes no body and imports the whole preview, so [excludedCourses]
 /// is tracked and ready but nothing sends it yet. See `auto_fill_page.dart`.
-class AutoFillState implements FutureState<AutoFillState, void> {
+class AutoFillState implements FutureState<AutoFillState, SlcmCredentials> {
   AutoFillState() {
     _repo = SlcmAutofillRepositoryImpl(SlcmAutofillRemoteDataSourceImpl());
   }
@@ -50,8 +55,11 @@ class AutoFillState implements FutureState<AutoFillState, void> {
   /// Guards against a slow poll overlapping the next tick.
   bool _pollInFlight = false;
 
-  /// Whether the login WebView was pushed and has not been closed from here.
-  bool _loginPageOpen = false;
+  /// The backend's `error.code` for the run that just failed, or null.
+  ///
+  /// Kept so the calling page can tell a mistyped password apart from an SLCM
+  /// outage and reopen the credential sheet only for the former.
+  String? _lastErrorCode;
 
   /// Every course SLCM matched, including the ones the student has removed.
   List<SiakCourseModel> get courses => _courses ?? [];
@@ -72,16 +80,25 @@ class AutoFillState implements FutureState<AutoFillState, void> {
 
   SlcmSessionStatus get status => _status;
 
-  /// Whether the login WebView is still showing on the student's behalf.
-  ///
-  /// False once [_closeLoginPage] has dismissed it on a settled session, which
-  /// is what stops the WebView's own dispose hook from cancelling a session
-  /// that just succeeded.
-  bool get isLoginPageOpen => _loginPageOpen;
+  /// The backend's failure code for the last settled run, or null.
+  String? get lastErrorCode => _lastErrorCode;
 
-  /// The full scrape result. `matched` is what [courses] renders; `duplicates`
-  /// and `unmatched` are the rows the import will not touch.
+  /// Whether the last failure was the credentials rather than SLCM itself.
+  bool get lastFailureWasCredentials =>
+      SlcmErrorCode.isCredentialProblem(_lastErrorCode);
+
+  /// The full result. `matched` is what [courses] renders; `duplicates` and
+  /// `unmatched` are the rows the import will not touch.
   SlcmPreviewModel? get preview => _preview;
+
+  /// Rows SLCM reported that no local course matched. Informational only.
+  List<SlcmUnmatchedCourseModel> get unmatchedCourses =>
+      _preview?.unmatched ?? const [];
+
+  /// Whether the backend flagged the IRS data as possibly out of date.
+  ///
+  /// Advisory only: the review screen shows a banner and the import still runs.
+  bool get hasStaleDataWarning => _preview?.warningStaleData ?? false;
 
   /// How many courses SLCM returned that can actually be imported.
   int get totalFound => courses.length;
@@ -116,10 +133,16 @@ class AutoFillState implements FutureState<AutoFillState, void> {
   bool getCondition() => _courses?.isNotEmpty ?? false;
 
   @override
-  Future<void> retrieveData([void _]) async {
+  Future<void> retrieveData([SlcmCredentials? credentials]) async {
     _reset();
 
-    final created = await _repo.createSession();
+    if (credentials == null || !credentials.isComplete) {
+      throw GeneralFailure(message: 'Username dan password SSO wajib diisi.');
+    }
+
+    // The only point the password is in play. It is not assigned to a field,
+    // so nothing outside this frame can reach it once the call returns.
+    final created = await _repo.createSession(credentials);
     final session = created.fold<SlcmSessionModel>(
       (failure) => throw failure,
       (result) => result.data,
@@ -135,13 +158,12 @@ class AutoFillState implements FutureState<AutoFillState, void> {
     // so the waiting view can already name it, ahead of the first poll.
     _givenSemester = session.givenSemester;
 
-    // Deliberately not awaited: the push completes only when the page is
-    // popped, and the poll below has to run while the student is still logging
-    // in. SlcmWebViewPage loads the single-use URL exactly once.
-    final popupUrl = session.popupUrl;
-    if (popupUrl != null && popupUrl.isNotEmpty) {
-      _loginPageOpen = true;
-      unawaited(nav.goToSlcmWebViewPage(popupUrl));
+    // A create that settles immediately - rejected credentials, for instance -
+    // never reaches the poll loop, so surface it here rather than waiting a
+    // tick for a session that will not change.
+    if (session.status.isTerminal) {
+      _lastErrorCode = session.error?.code;
+      throw GeneralFailure(message: _messageFor(session));
     }
 
     autoFillRM.notify();
@@ -170,44 +192,6 @@ class AutoFillState implements FutureState<AutoFillState, void> {
       return;
     }
     await _repo.deleteSession(sessionId);
-  }
-
-  /// Cancels the session because the student backed out of the login WebView.
-  ///
-  /// This is the case that strands a session: the auto-fill page underneath
-  /// survives the pop, so nothing else runs, and the backend keeps the shared
-  /// browser locked until `SLCM_AUTOFILL_TIMEOUT_SECONDS` elapses — every
-  /// retry in that window is refused with 409 `SESSION_ALREADY_ACTIVE`.
-  ///
-  /// The DELETE is awaited so the slot is free before the student can reach
-  /// the button again.
-  ///
-  /// Unlike [cancel], which runs while the auto-fill page is being disposed,
-  /// this leaves that page on screen — so it settles the poll with an error
-  /// rather than completing quietly into an empty course list.
-  Future<void> cancelFromLoginPage() async {
-    // Cleared first: the WebView's dispose hook reads this to decide whether
-    // it still needs to cancel, and must see the work already claimed.
-    _loginPageOpen = false;
-    _stopPolling();
-
-    final settled = _settled;
-    _settled = null;
-
-    final sessionId = _sessionId;
-    _sessionId = null;
-
-    if (sessionId != null && !_status.isTerminal) {
-      await _repo.deleteSession(sessionId);
-    }
-    _status = SlcmSessionStatus.cancelled;
-
-    if (settled != null && !settled.isCompleted) {
-      settled.completeError(
-        GeneralFailure(message: 'Login SLCM dibatalkan.'),
-      );
-    }
-    autoFillRM.notify();
   }
 
   /// Imports the scraped preview server-side.
@@ -298,12 +282,13 @@ class AutoFillState implements FutureState<AutoFillState, void> {
     }
 
     if (session.status.isTerminal) {
+      _lastErrorCode = session.error?.code;
       _failWith(GeneralFailure(message: _messageFor(session)));
       return;
     }
 
-    // Still waiting on the login or the scrape. Notify so a later UI can show
-    // which of the two it is.
+    // Still authenticating or still reading the IRS page. Notify so the
+    // waiting view can say which of the two it is.
     autoFillRM.notify();
   }
 
@@ -335,7 +320,17 @@ class AutoFillState implements FutureState<AutoFillState, void> {
         .toList();
   }
 
+  /// Copy for a settled-but-unsuccessful session.
+  ///
+  /// The known [SlcmErrorCode]s win over the backend's own `error.message`:
+  /// those strings are operator-facing and the product owns what the student
+  /// reads. An unrecognised code still falls through to the backend message,
+  /// so a newly added failure is never flattened into the generic line.
   String _messageFor(SlcmSessionModel session) {
+    final mapped = SlcmErrorCode.messageFor(session.error?.code);
+    if (mapped != null) {
+      return mapped;
+    }
     final message = session.error?.message;
     if (message != null && message.isNotEmpty) {
       return message;
@@ -346,7 +341,7 @@ class AutoFillState implements FutureState<AutoFillState, void> {
       case SlcmSessionStatus.cancelled:
         return 'Sesi SLCM dibatalkan.';
       case SlcmSessionStatus.failed:
-      case SlcmSessionStatus.waitingLogin:
+      case SlcmSessionStatus.authenticating:
       case SlcmSessionStatus.scraping:
       case SlcmSessionStatus.ready:
       case SlcmSessionStatus.imported:
@@ -357,7 +352,6 @@ class AutoFillState implements FutureState<AutoFillState, void> {
 
   void _succeed() {
     _stopPolling();
-    _closeLoginPage();
     final settled = _settled;
     if (settled != null && !settled.isCompleted) {
       settled.complete();
@@ -367,24 +361,10 @@ class AutoFillState implements FutureState<AutoFillState, void> {
 
   void _failWith(Failure failure) {
     _stopPolling();
-    _closeLoginPage();
     final settled = _settled;
     if (settled != null && !settled.isCompleted) {
       settled.completeError(failure);
     }
-  }
-
-  /// Dismisses the login WebView once the session settles, so the student
-  /// lands on the review list (or the error) rather than a spent noVNC screen.
-  ///
-  /// A no-op when the WebView was never opened or the student already backed
-  /// out of it — popping to a route we are already on does nothing.
-  void _closeLoginPage() {
-    if (!_loginPageOpen) {
-      return;
-    }
-    _loginPageOpen = false;
-    nav.popUntil(RouteName.autoFillPage);
   }
 
   void _stopPolling() {
@@ -395,8 +375,8 @@ class AutoFillState implements FutureState<AutoFillState, void> {
 
   void _reset() {
     _stopPolling();
-    _loginPageOpen = false;
     _settled = null;
+    _lastErrorCode = null;
     _courses = null;
     _duplicates = null;
     _selected.clear();

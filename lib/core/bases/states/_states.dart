@@ -12,6 +12,7 @@ import 'package:ulaskelas/core/utils/in_app_tour/pages/_pages.dart';
 import 'package:ulaskelas/features/home/presentation/pages/_pages.dart';
 import 'package:ulaskelas/features/home/presentation/states/_states.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/siak_course_model.dart';
+import 'package:ulaskelas/features/kalkulator/domain/entities/slcm_credentials.dart';
 import 'package:ulaskelas/features/kalkulator/presentation/pages/_pages.dart';
 import 'package:ulaskelas/features/kalkulator/presentation/states/_states.dart';
 import 'package:ulaskelas/features/leaderboard/presentation/pages/_pages.dart';
