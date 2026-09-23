@@ -7,6 +7,7 @@ import '../../../../core/error/_error.dart';
 import '../../../../core/extension/_extension.dart';
 import '../../domain/entities/query_calculator.dart';
 import '../../domain/entities/query_semester.dart';
+import '../../domain/entities/slcm_credentials.dart';
 import '../models/calculator_model.dart';
 import '../models/component_model.dart';
 import '../models/semester_model.dart';

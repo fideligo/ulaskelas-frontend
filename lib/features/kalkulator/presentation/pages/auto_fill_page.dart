@@ -2,20 +2,29 @@ part of '_pages.dart';
 
 /// Reviews the courses SLCM reports for a semester before they are imported.
 ///
-/// Takes no semester: the backend derives it from the student's NPM when the
-/// session opens and returns it on the session, so every label here reads it
-/// off `AutoFillState.givenSemester` once the create call answers.
+/// Opened with the SSO credentials the student just entered; the backend uses
+/// them once to sign in to SLCM and never returns them.
+///
+/// The semester is whatever the session reports: either the optional override
+/// typed into the credential sheet, or the one the backend derived from the
+/// student's NPM. Every label here reads `AutoFillState.givenSemester` once
+/// the create call answers.
 ///
 /// `preview.matched` is what gets imported and each row can be dropped from
-/// the list; `preview.duplicates` is already in the semester, so it is shown
-/// greyed out with no control on it at all.
+/// the list; `preview.duplicates` is already in the semester and
+/// `preview.unmatched` has no local course to import into, so both are shown
+/// inert.
 ///
 /// Dropping a row is local for now: the confirm call takes no body and the
 /// backend imports the whole preview regardless. `AutoFillState` tracks the
 /// removals in `excludedCourseCodes`, ready to send once the endpoint accepts
 /// them.
 class AutoFillPage extends StatefulWidget {
-  const AutoFillPage({super.key});
+  const AutoFillPage({required this.credentials, super.key});
+
+  /// Used exactly once, to open the session in `init`. Held by the widget
+  /// rather than any longer-lived object so it dies with the route.
+  final SlcmCredentials credentials;
 
   @override
   _AutoFillPageState createState() => _AutoFillPageState();
@@ -27,14 +36,14 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
 
   @override
   void init() {
-    autoFillRM.setState((s) => s.retrieveData());
+    autoFillRM.setState((s) => s.retrieveData(widget.credentials));
   }
 
   @override
   void dispose() {
-    // Stops the poll timer and hands the shared SLCM browser back. The backend
-    // allows one live session at a time, so leaving on an unfinished session
-    // would lock the student out of their next attempt until it times out.
+    // Stops the poll timer and releases the session. The backend allows one
+    // live session per user, so leaving on an unfinished one would lock the
+    // student out of their next attempt until it times out server-side.
     unawaited(autoFillRM.state.cancel());
     super.dispose();
   }
@@ -104,6 +113,10 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       children: [
+        if (data.hasStaleDataWarning) ...[
+          _buildStaleDataBanner(),
+          const HeightSpace(16),
+        ],
         Text(
           'Pilih mata kuliah semester ini',
           style: FontTheme.poppins12w400black().copyWith(
@@ -151,8 +164,90 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
             ),
           ),
         ..._buildDuplicateSection(data),
+        ..._buildUnmatchedSection(data),
       ],
     );
+  }
+
+  /// Advisory shown when the backend could not confirm SLCM served the current
+  /// term.
+  ///
+  /// Deliberately not a blocker: the rows may still be exactly right, and the
+  /// student is the one who knows whether their IRS changed recently. The
+  /// continue button is untouched by this.
+  Widget _buildStaleDataBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: BaseColors.warning.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: BaseColors.warning),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: BaseColors.mineShaft,
+          ),
+          const WidthSpace(10),
+          Expanded(
+            child: Text(
+              'Data dari SLCM mungkin belum yang terbaru, tetapi Anda tetap '
+              'dapat melanjutkan import.',
+              style: FontTheme.poppins12w400black(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Rows SLCM reported that no local course matched.
+  ///
+  /// Shown so a student who expected eight courses and sees six knows why,
+  /// rather than assuming the import lost them. Nothing can be done about
+  /// these from here - there is no catalog entry to attach a calculator row
+  /// to - so they carry no control at all.
+  List<Widget> _buildUnmatchedSection(AutoFillState data) {
+    final unmatched = data.unmatchedCourses;
+    if (unmatched.isEmpty) {
+      return [];
+    }
+    return [
+      const HeightSpace(10),
+      Text(
+        'Tidak ditemukan di katalog (${unmatched.length})',
+        style: FontTheme.poppins14w700black().copyWith(
+          color: BaseColors.gray2,
+        ),
+      ),
+      const HeightSpace(4),
+      Text(
+        'Matkul ini ada di IRS kamu tapi belum terdaftar di Teman Kuliah, '
+        'jadi tidak bisa ditambahkan.',
+        style: FontTheme.poppins12w400black().copyWith(
+          color: BaseColors.gray2,
+        ),
+      ),
+      const HeightSpace(14),
+      ...unmatched.map(
+        (course) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: CourseChecklistCard(
+            name: course.name,
+            // The scraped shape spells the credit count `credits` where a
+            // resolved course says `sks`.
+            sks: course.credits,
+            code: course.code,
+            isSelected: false,
+            isDisabled: true,
+          ),
+        ),
+      ),
+    ];
   }
 
   /// Reachable by removing every row, so it explains the way back rather than
@@ -326,8 +421,8 @@ class _AutoFillPageState extends BaseStateful<AutoFillPage> {
 
   String get _waitingLabel {
     switch (autoFillRM.state.status) {
-      case SlcmSessionStatus.waitingLogin:
-        return 'Menunggu Anda login di browser...';
+      case SlcmSessionStatus.authenticating:
+        return 'Menghubungkan ke SSO UI...';
       case SlcmSessionStatus.scraping:
         return 'Sedang mengambil data dari SLCM...';
       // Reached only in the gap before the session exists, and briefly at

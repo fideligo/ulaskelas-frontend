@@ -1,5 +1,37 @@
 part of '_client.dart';
 
+/// Body keys whose values must never reach the log.
+///
+/// The helpers below print the request body in debug builds, which is how the
+/// SLCM autofill password would otherwise land in the console - and in any log
+/// sink or crash reporter attached to it. Redacting here, once, means a future
+/// endpoint that posts a secret is covered without anyone having to remember
+/// at the call site.
+///
+/// The auth token in the headers is a separate matter and is still printed;
+/// that is pre-existing behaviour the app's own QA flow relies on.
+const _redactedBodyKeys = <String>{
+  'password',
+  'secret',
+  'client_secret',
+  'access_token',
+  'refresh_token',
+};
+
+/// The request body rendered as it is safe to log.
+String _loggableBody(Map<String, dynamic>? model) {
+  if (model == null) {
+    return 'null';
+  }
+  final safe = model.map(
+    (key, value) => MapEntry(
+      key,
+      _redactedBodyKeys.contains(key.toLowerCase()) ? '<redacted>' : value,
+    ),
+  );
+  return '$safe';
+}
+
 Future<Response> getIt(
   String url, {
   Map<String, String>? headers,
@@ -38,7 +70,7 @@ Future<Response> postIt(
     Logger().i({
       'url': url,
       'headers': '${Pref.getHeaders()}',
-      'model': '$model',
+      'model': _loggableBody(model),
     });
   }
   final getHeaders = headers ?? Pref.getHeaders();
@@ -67,7 +99,7 @@ Future<Response> putIt(
     Logger().i({
       'url': url,
       'headers': '${Pref.getHeaders()}',
-      'model': '$model',
+      'model': _loggableBody(model),
     });
   }
   final getHeaders = headers ?? Pref.getHeaders();
@@ -96,7 +128,7 @@ Future<Response> deleteIt(
     Logger().i({
       'url': url,
       'headers': '${Pref.getHeaders()}',
-      'model': '$model',
+      'model': _loggableBody(model),
     });
   }
   final getHeaders = headers ?? Pref.getHeaders();
@@ -185,7 +217,7 @@ Future<Response> postWithFileInIt(
     Logger().i({
       'url': url,
       'headers': '${Pref.getHeaders()}',
-      'model': '$model',
+      'model': _loggableBody(model),
     });
   }
 

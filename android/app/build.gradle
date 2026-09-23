@@ -32,7 +32,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "com.ristek.ulaskelas"
-    compileSdkVersion 35
+    compileSdkVersion 36
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -42,7 +42,7 @@ android {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.ristek.ulaskelas"
         minSdkVersion 26
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -91,6 +91,17 @@ android {
         production {
             dimension "apps"
             signingConfig signingConfigs.release
+        }
+    }
+
+    // Official workaround for the Play Console 16 KB check on AGP 8.3-8.5:
+    // bundletool does not 16 KB-align uncompressed .so when generating APKs
+    // from the bundle, so ship them compressed and let the installer extract
+    // them instead. Requires `android:extractNativeLibs` to be absent from
+    // the manifest, otherwise the hardcoded value wins over this DSL.
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
         }
     }
 

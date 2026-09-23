@@ -225,22 +225,16 @@ class NavigationServiceState implements Navigation {
     );
   }
 
-  /// Opens the SLCM autofill flow. Takes no semester — the backend picks the
-  /// one the student is currently in and reports it back on the session.
-  Future<void> goToAutoFillPage() {
+  /// Opens the SLCM autofill flow with the credentials the student just
+  /// entered.
+  ///
+  /// [credentials] is passed by value and held only by the page's state for
+  /// the length of the create call — see [SlcmCredentials] for why it must not
+  /// be stored anywhere else.
+  Future<void> goToAutoFillPage(SlcmCredentials credentials) {
     return nav.push<void>(
-      const AutoFillPage(),
+      AutoFillPage(credentials: credentials),
       RouteName.autoFillPage,
-    );
-  }
-
-  /// Opens the SLCM login WebView. The future completes when the page is
-  /// popped, so callers that need to keep working while the student logs in
-  /// must not await it.
-  Future<void> goToSlcmWebViewPage(String popupUrl) {
-    return nav.push<void>(
-      SlcmWebViewPage(popupUrl: popupUrl),
-      RouteName.slcmWebViewPage,
     );
   }
 

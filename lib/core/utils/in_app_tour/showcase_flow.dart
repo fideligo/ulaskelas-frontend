@@ -8,6 +8,7 @@ import 'package:showcaseview/showcaseview.dart';
 import 'package:ulaskelas/core/theme/_theme.dart';
 
 import '../../../services/_services.dart';
+import '../../../services/notification/_notification.dart';
 import '../../bases/states/_states.dart';
 import 'showcase_keys.dart';
 import 'widgets/_widgets.dart';
@@ -37,6 +38,20 @@ bool backFromAddComponent = false;
 bool userHasUsedAutoFill = false;
 bool firstComponentFilled = false;
 bool secondComponentFilled = false;
+
+/// Asks for notification consent once the tour is out of the way.
+///
+/// Both exits land here: "Selesai" in [showInAppTourClosing] and "Ya, Lewati"
+/// in [showSkipConfirmationDialog]. The delay lets the closing dialog finish
+/// its exit animation so the OS sheet never overlays it — the very reason the
+/// request used to be deferred to a later launch.
+///
+/// [NotificationPermission.requestIfNeeded] prompts at most once per install,
+/// so replaying the tour via "Ulangi Tur" does not re-prompt.
+Future<void> _askNotificationPermission() async {
+  await Future.delayed(const Duration(milliseconds: 400));
+  await NotificationPermission.requestIfNeeded();
+}
 
 Future<void> showInAppTourOpening(BuildContext ctx, {bool back = false}) async {
   if (!back) {
@@ -295,6 +310,7 @@ Future<void> showSkipConfirmationDialog(
                             secondComponentFilled = false;
 
                             await Pref.saveBool('doneAppTour', value: true);
+                            await _askNotificationPermission();
                           },
                         ),
                       ),
@@ -610,6 +626,7 @@ Future<void> showInAppTourClosing(BuildContext ctx) async {
                                         'doneAppTour',
                                         value: true,
                                       );
+                                      await _askNotificationPermission();
                                     },
                                   ),
                                 ),

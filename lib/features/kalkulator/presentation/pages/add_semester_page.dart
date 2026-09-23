@@ -55,13 +55,20 @@ class _AddSemesterPageState extends State<AddSemesterPage> {
 
   /// Starts an autofill run.
   ///
-  /// Nothing is picked here any more. The app used to guess the target as the
-  /// earliest regular semester the student had not created yet; the backend
-  /// now derives it from their NPM entry year and the running academic period
-  /// and returns it on the session, so the guess — and the guard that refused
-  /// to start once every regular semester existed — are both gone.
-  void _onAutoFillPressed() {
-    nav.goToAutoFillPage();
+  /// The backend signs in to SLCM over HTTP, so the credentials are collected
+  /// here first and handed to the page. Nothing is picked otherwise: the
+  /// semester is optional inside the sheet and, left blank, the backend
+  /// derives it from the student's NPM entry year and the running academic
+  /// period.
+  ///
+  /// The returned [SlcmCredentials] is passed straight through and never
+  /// retained by this page.
+  Future<void> _onAutoFillPressed() async {
+    final credentials = await SlcmCredentialSheet.show(context);
+    if (credentials == null) {
+      return;
+    }
+    await nav.goToAutoFillPage(credentials);
   }
 
   Future<void> _onManualFillPressed() async {

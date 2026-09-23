@@ -6,6 +6,8 @@ import 'package:ristek_material_component/ristek_material_component.dart';
 import 'package:ulaskelas/core/_core.dart';
 import 'package:ulaskelas/core/error/_error.dart';
 import 'package:ulaskelas/features/kalkulator/data/datasources/_datasources.dart';
+import 'package:ulaskelas/features/kalkulator/domain/entities/slcm_credentials.dart';
+import 'package:ulaskelas/features/kalkulator/domain/entities/slcm_error_code.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/calculator_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/component_model.dart';
 import 'package:ulaskelas/features/kalkulator/data/models/siak_course_model.dart';
